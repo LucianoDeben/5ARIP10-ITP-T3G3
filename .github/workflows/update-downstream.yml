@@ -1,0 +1,8 @@
+git checkout main
+git pull origin main
+
+for branch in $(git branch -r | grep -v main); do
+    git checkout ${branch#origin/}
+    git merge main --no-edit
+    git push origin ${branch#origin/}
+done
