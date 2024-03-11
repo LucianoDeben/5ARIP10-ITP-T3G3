@@ -1,0 +1,34 @@
+{
+  "training": [
+    {
+      "image": "..\\data\\train\\HCC-TACE-Seg\\HCC_017\\300\\image",
+      "seg": "..\\data\\train\\HCC-TACE-Seg\\HCC_017\\300\\seg"
+    },
+    {
+      "image": "..\\data\\train\\HCC-TACE-Seg\\HCC_051\\300\\image",
+      "seg": "..\\data\\train\\HCC-TACE-Seg\\HCC_051\\300\\seg"
+    },
+    {
+      "image": "..\\data\\train\\HCC-TACE-Seg\\HCC_077\\300\\image",
+      "seg": "..\\data\\train\\HCC-TACE-Seg\\HCC_077\\300\\seg"
+    },
+    {
+      "image": "..\\data\\train\\HCC-TACE-Seg\\HCC_081\\300\\image",
+      "seg": "..\\data\\train\\HCC-TACE-Seg\\HCC_081\\300\\seg"
+    },
+    {
+      "image": "..\\data\\train\\HCC-TACE-Seg\\HCC_073\\300\\image",
+      "seg": "..\\data\\train\\HCC-TACE-Seg\\HCC_073\\300\\seg"
+    }
+  ],
+  "testing": [
+    {
+      "image": "..\\data\\test\\HCC-TACE-Seg\\HCC_017\\300\\image",
+      "seg": "..\\data\\test\\HCC-TACE-Seg\\HCC_017\\300\\seg"
+    },
+    {
+      "image": "..\\data\\test\\HCC-TACE-Seg\\HCC_077\\300\\image",
+      "seg": "..\\data\\test\\HCC-TACE-Seg\\HCC_077\\300\\seg"
+    }
+  ]
+}
