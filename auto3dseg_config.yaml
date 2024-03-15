@@ -1,1 +1,0 @@
-{"name": "HCC-TACE-Seg", "task": "segmentation", "modality": "CT", "datalist": "../auto3dseg_datalist.json", "dataroot": "../data/auto3dseg"}
