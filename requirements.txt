@@ -1,4 +1,6 @@
-torch>=1.9
-numpy>=1.20
-monai>=0.7.0
-pydicom>=2.1.2
+torch
+numpy
+monai
+pydicom
+matplotlib
+diffdrr
