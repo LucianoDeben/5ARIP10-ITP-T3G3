@@ -62,3 +62,4 @@ venv.bak/
 # Data
 /data
 /SAM-Med3D
+/models
