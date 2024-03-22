@@ -1,1 +1,24 @@
-{"training": [{"image": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\image", "fold": 0, "label": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\seg"}, {"image": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\image", "fold": 0, "label": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\seg"}], "testing": [{"image": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\image", "label": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\seg"}, {"image": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\image", "label": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\seg"}]}
+{
+  "training": [
+    {
+      "image": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\image",
+      "fold": 0,
+      "label": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\seg"
+    },
+    {
+      "image": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\image",
+      "fold": 0,
+      "label": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\seg"
+    }
+  ],
+  "testing": [
+    {
+      "image": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\image",
+      "label": "..\\data\\HCC-TACE-Seg\\HCC_017\\300\\seg"
+    },
+    {
+      "image": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\image",
+      "label": "..\\data\\HCC-TACE-Seg\\HCC_077\\300\\seg"
+    }
+  ]
+}
