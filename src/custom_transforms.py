@@ -10,29 +10,33 @@ class UndoOneHotEncoding(MapTransform):
         for key in self.keys:
             data[key] = data[key].argmax(dim=0).unsqueeze(0)
         return data
-    
-class AddBackgroundChannel(MapTransform):
+
+class AddBackgroundChannel:
     def __init__(self, keys):
-        super().__init__(keys)
+        self.keys = keys
 
     def __call__(self, data):
         for key in self.keys:
-            # Calculate the background channel
-            background = 1 - data[key].sum(dim=0, keepdim=True)
-            
-            # Add the background channel to the segmentation
-            data[key] = torch.cat([data[key], background], dim=0)
+            # Get the current segmentation
+            seg = data[key]
+
+            # Create a new channel that is 1 where all other channels are 0
+            background = (seg.sum(dim=0) == 0).float()
+
+            # Add the new channel to the segmentation
+            data[key] = torch.cat([seg, background.unsqueeze(0)], dim=0)
+
         return data
     
-class AddNecrosisChannel(MapTransform):
+class RemoveNecrosisChannel(MapTransform):
     def __init__(self, keys):
         super().__init__(keys)
 
     def __call__(self, data):
         for key in self.keys:
-            # Check if the segmentation has less than 5 channels
-            if data[key].shape[0] < 5:
-                # Add an extra channel of zeros at the 3rd position
-                zeros = torch.zeros((1, data[key].shape[1], data[key].shape[2], data[key].shape[3]))
-                data[key] = torch.cat((data[key][:2], zeros, data[key][2:]), axis=0)
+            # Check if the segmentation has 4 or more channels
+            print(data[key].shape)
+            if data[key].shape[0] >= 4:
+                # Remove the 3rd channel
+                data[key] = torch.cat((data[key][:2], data[key][3:]), axis=0)
         return data
