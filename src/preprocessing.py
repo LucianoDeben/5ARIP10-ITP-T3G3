@@ -3,19 +3,21 @@ from monai.data import DataLoader
 from monai.transforms import (Compose, EnsureChannelFirstd, LoadImaged,
                               Resized, ResizeWithPadOrCropd)
 
-from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel
+from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel, RemoveDualImage
 
 
-def get_transforms(resize_shape = [512, 512, 64]):
+def get_transforms(resize_shape = [96, 96, 32]):
     # Create a composed transform
     transform = Compose(
         [
             LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
             EnsureChannelFirstd(keys=["image", "seg"]),
-            ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),        
+            RemoveDualImage(keys=["image", "seg"]),
+            Resized(keys=["image", "seg"], spatial_size=resize_shape),        
             RemoveNecrosisChannel(keys=["seg"]),
             AddBackgroundChannel(keys=["seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape)
+            
+            
         ]
     )
     return transform
