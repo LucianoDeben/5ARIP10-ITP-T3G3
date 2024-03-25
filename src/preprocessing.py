@@ -6,7 +6,7 @@ from monai.transforms import (Compose, EnsureChannelFirstd, LoadImaged,
 from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel
 
 
-def get_transforms():
+def get_transforms(resize_shape = [512, 512, 64]):
     # Create a composed transform
     transform = Compose(
         [
@@ -15,7 +15,7 @@ def get_transforms():
             ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),        
             RemoveNecrosisChannel(keys=["seg"]),
             AddBackgroundChannel(keys=["seg"]),
-            Resized(keys=["image", "seg"], spatial_size=[64, 64, 64])
+            Resized(keys=["image", "seg"], spatial_size=resize_shape)
         ]
     )
     return transform
