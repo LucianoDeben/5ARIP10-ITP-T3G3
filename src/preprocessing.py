@@ -12,10 +12,10 @@ def get_transforms(resize_shape = [512, 512, 64]):
         [
             LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
             EnsureChannelFirstd(keys=["image", "seg"]),
-            ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),        
+            #ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),        
             RemoveNecrosisChannel(keys=["seg"]),
             AddBackgroundChannel(keys=["seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape)
+            #Resized(keys=["image", "seg"], spatial_size=resize_shape)
         ]
     )
     return transform
