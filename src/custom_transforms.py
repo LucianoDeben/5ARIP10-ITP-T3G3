@@ -46,7 +46,6 @@ class RemoveDualImage(MapTransform):
         super().__init__(keys)
 
     def __call__(self, data):
-        print(data['image'].size())
         if data['image'].size()[3] > data['seg'].size()[3]:
             data['image'] = data['image'][:, :, :, :(data['seg'].size()[3])]
         return data
