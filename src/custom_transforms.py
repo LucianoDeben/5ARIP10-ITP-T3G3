@@ -49,3 +49,15 @@ class RemoveDualImage(MapTransform):
         if data['image'].size()[3] > data['seg'].size()[3]:
             data['image'] = data['image'][:, :, :, :(data['seg'].size()[3])]
         return data
+    
+
+
+class IsolateArteries(MapTransform):
+    def __init__(self, keys):
+        super().__init__(keys)
+    
+    def __call__(self, data):
+        
+        data['seg'] = data['seg'][3,:,:,:]
+        print(data['seg'].size())
+        return data

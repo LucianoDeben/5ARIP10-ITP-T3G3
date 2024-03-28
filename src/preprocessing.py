@@ -3,7 +3,7 @@ from monai.data import DataLoader
 from monai.transforms import (Compose, EnsureChannelFirstd, LoadImaged,
                               Resized, ResizeWithPadOrCropd)
 
-from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel, RemoveDualImage
+from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel, RemoveDualImage, IsolateArteries
 
 
 def get_transforms(resize_shape = [96, 96, 32]):
@@ -13,9 +13,10 @@ def get_transforms(resize_shape = [96, 96, 32]):
             LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
             EnsureChannelFirstd(keys=["image", "seg"]),
             RemoveDualImage(keys=["image", "seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape),        
-            RemoveNecrosisChannel(keys=["seg"]),
-            AddBackgroundChannel(keys=["seg"]),
+            Resized(keys=["image", "seg"], spatial_size=resize_shape),
+            IsolateArteries(keys=['seg']),        
+            #RemoveNecrosisChannel(keys=["seg"]),
+            #AddBackgroundChannel(keys=["seg"]),
             
             
         ]
