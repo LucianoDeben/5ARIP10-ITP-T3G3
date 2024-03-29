@@ -58,6 +58,6 @@ class IsolateArteries(MapTransform):
     
     def __call__(self, data):
         
-        data['seg'] = data['seg'][3,:,:,:]
-        print(data['seg'].size())
+        data['seg'] = data['seg'][2,:,:,:]
+        #print(data['seg'].size())
         return data
