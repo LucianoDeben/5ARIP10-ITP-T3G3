@@ -6,7 +6,7 @@ from monai.transforms import (Compose, EnsureChannelFirstd, LoadImaged,
 from src.custom_transforms import AddBackgroundChannel, RemoveNecrosisChannel, RemoveDualImage, IsolateArteries
 
 
-def get_transforms(resize_shape = [96, 96, 32]):
+def get_transforms(resize_shape = [512, 512, 96]):
     # Create a composed transform
     transform = Compose(
         [
