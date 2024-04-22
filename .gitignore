@@ -65,3 +65,6 @@ venv.bak/
 /models
 *.pth
 
+#WandB
+/notebooks/wandb
+

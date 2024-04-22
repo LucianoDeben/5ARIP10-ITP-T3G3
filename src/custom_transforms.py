@@ -133,3 +133,24 @@ class AddVesselContrast(MapTransform):
         vessel_mask = vessel_mask.unsqueeze(0)
         image[vessel_mask == 1] += self.contrast_value
         return d
+
+
+class RemoveDualImage(MapTransform):
+    def __init__(self, keys):
+        super().__init__(keys)
+
+    def __call__(self, data):
+        if data["image"].size()[3] > data["seg"].size()[3]:
+            data["image"] = data["image"][:, :, :, : (data["seg"].size()[3])]
+        return data
+
+
+class IsolateArteries(MapTransform):
+    def __init__(self, keys):
+        super().__init__(keys)
+
+    def __call__(self, data):
+
+        data["seg"] = data["seg"][2, :, :, :]
+        # print(data['seg'].size())
+        return data
