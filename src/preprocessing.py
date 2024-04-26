@@ -13,13 +13,15 @@ from monai.transforms import (
 from src.custom_transforms import (
     AddBackgroundChannel,
     AddVesselContrast,
+    ConvertToSingleChannel,
     IsolateArteries,
     RemoveDualImage,
     RemoveNecrosisChannel,
+    SaveToOriginalLocation,
 )
 
 
-def get_transforms(resize_shape=[512, 512, 96]):
+def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
     """
     Create a composed transform for the data preprocessing of mask and image data
 
@@ -46,11 +48,15 @@ def get_transforms(resize_shape=[512, 512, 96]):
             #     b_max=230,
             #     clip=True,
             # ),
-            AddVesselContrast(keys=["image", "seg"], contrast_value=200),
-            RemoveDualImage(keys=["image", "seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape),
-            IsolateArteries(keys=["seg"]),
+            AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+            # RemoveDualImage(keys=["image", "seg"]),
+            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
+            # IsolateArteries(keys=["seg"]),
+            ConvertToSingleChannel(keys=["seg"]),
             DataStatsd(keys=["image", "seg"], data_shape=True),
+            # SaveToOriginalLocation(
+            #     keys=["image", "seg"], output_postfix="", output_ext=".dcm"
+            # ),
         ],
         lazy=False,
     )
