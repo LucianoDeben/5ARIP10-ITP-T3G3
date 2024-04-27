@@ -36,9 +36,9 @@ def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
         [
             LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
             EnsureChannelFirstd(keys=["image", "seg"]),
-            ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),
+            # ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),
             RemoveNecrosisChannel(keys=["seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape),
+            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
             AddBackgroundChannel(keys=["seg"]),
             # ScaleIntensityRanged(
             #     keys=["image"],
@@ -53,7 +53,7 @@ def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
             # Resized(keys=["image", "seg"], spatial_size=resize_shape),
             # IsolateArteries(keys=["seg"]),
             ConvertToSingleChannel(keys=["seg"]),
-            DataStatsd(keys=["image", "seg"], data_shape=True),
+            # DataStatsd(keys=["image", "seg"], data_shape=True),
             # SaveToOriginalLocation(
             #     keys=["image", "seg"], output_postfix="", output_ext=".dcm"
             # ),
