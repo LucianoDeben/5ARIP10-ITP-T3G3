@@ -36,3 +36,31 @@ class Conv3DTo2D(nn.Module):
         # Output shape: (batch_size, 1, 256, 256)
         return x
 
+class ConvNet(nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        # Define the layers
+        self.conv1 = nn.Conv2d(2, 16, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(32, 1, kernel_size=3, padding=1)
+        
+    def forward(self, x):
+        # Forward pass through the network
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.conv3(x)
+        return x
+
+
+class TACEnet(nn.Module):
+    def __init__(self):
+        super(TACEnet, self).__init__()
+        self.lrm = Conv3DTo2D()
+        self.cn = ConvNet()
+    
+    def forward(self, VesselVolume, DRR):
+        x = self.lrm(VesselVolume)
+        x = torch.concatenate((DRR, x), dim=1)
+        x = self.cn(x)
+        return x
+
