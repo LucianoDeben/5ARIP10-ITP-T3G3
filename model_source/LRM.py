@@ -10,11 +10,10 @@ class Conv3DTo2D(nn.Module):
         self.conv2 = nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
         
         # Define the 2D convolution layers for mapping to 2D latent representation
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, padding=1)
-        self.conv4 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=32, kernel_size=3, padding=1)
         
         # Define the final convolutional layer for resizing to (256, 256)
-        self.conv5 = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=2, stride=2)
+        self.conv5 = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=2, stride=2)
         
     def forward(self, x):
         # Input shape: (batch_size, channels=1, depth=96, height=512, width=512)
@@ -28,7 +27,6 @@ class Conv3DTo2D(nn.Module):
         
         # Apply 2D convolutions
         x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
         
         # Apply final convolutional layer for resizing
         x = self.conv5(x)
