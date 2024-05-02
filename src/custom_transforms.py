@@ -174,15 +174,3 @@ class IsolateArteries(MapTransform):
         data["seg"] = data["seg"][2, :, :, :]
         # print(data['seg'].size())
         return data
-
-
-class SaveToOriginalLocation(SaveImaged):
-    def __call__(self, data):
-        for key in self.keys:
-            meta_data = data.get(f"{key}_{self.meta_key_postfix}")
-            if meta_data is not None and "filename_or_obj" in meta_data:
-                print(meta_data["filename_or_obj"])
-                output_dir = os.path.dirname(meta_data["filename_or_obj"])
-                self.output_dir = output_dir
-            super().__call__(data)
-        return data

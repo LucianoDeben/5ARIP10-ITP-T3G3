@@ -5,6 +5,7 @@ from monai.transforms import (
     DataStatsd,
     EnsureChannelFirstd,
     LoadImaged,
+    RandGridDistortiond,
     Resized,
     ResizeWithPadOrCropd,
     ScaleIntensityRanged,
@@ -17,7 +18,6 @@ from src.custom_transforms import (
     IsolateArteries,
     RemoveDualImage,
     RemoveNecrosisChannel,
-    SaveToOriginalLocation,
 )
 
 
@@ -54,9 +54,7 @@ def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
             # IsolateArteries(keys=["seg"]),
             ConvertToSingleChannel(keys=["seg"]),
             # DataStatsd(keys=["image", "seg"], data_shape=True),
-            # SaveToOriginalLocation(
-            #     keys=["image", "seg"], output_postfix="", output_ext=".dcm"
-            # ),
+            # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
         ],
         lazy=False,
     )
