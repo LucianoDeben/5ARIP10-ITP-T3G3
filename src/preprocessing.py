@@ -5,6 +5,7 @@ from monai.transforms import (
     DataStatsd,
     EnsureChannelFirstd,
     LoadImaged,
+    RandGridDistortiond,
     Resized,
     ResizeWithPadOrCropd,
     ScaleIntensityRanged,
@@ -13,13 +14,14 @@ from monai.transforms import (
 from src.custom_transforms import (
     AddBackgroundChannel,
     AddVesselContrast,
+    ConvertToSingleChannel,
     IsolateArteries,
     RemoveDualImage,
     RemoveNecrosisChannel,
 )
 
 
-def get_transforms(resize_shape=[512, 512, 96]):
+def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
     """
     Create a composed transform for the data preprocessing of mask and image data
 
@@ -34,9 +36,9 @@ def get_transforms(resize_shape=[512, 512, 96]):
         [
             LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
             EnsureChannelFirstd(keys=["image", "seg"]),
-            ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),
+            # ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=[512, 512, 64]),
             RemoveNecrosisChannel(keys=["seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape),
+            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
             AddBackgroundChannel(keys=["seg"]),
             # ScaleIntensityRanged(
             #     keys=["image"],
@@ -46,11 +48,13 @@ def get_transforms(resize_shape=[512, 512, 96]):
             #     b_max=230,
             #     clip=True,
             # ),
-            AddVesselContrast(keys=["image", "seg"], contrast_value=200),
-            RemoveDualImage(keys=["image", "seg"]),
-            Resized(keys=["image", "seg"], spatial_size=resize_shape),
-            IsolateArteries(keys=["seg"]),
-            DataStatsd(keys=["image", "seg"], data_shape=True),
+            AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+            # RemoveDualImage(keys=["image", "seg"]),
+            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
+            # IsolateArteries(keys=["seg"]),
+            ConvertToSingleChannel(keys=["seg"]),
+            # DataStatsd(keys=["image", "seg"], data_shape=True),
+            # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
         ],
         lazy=False,
     )

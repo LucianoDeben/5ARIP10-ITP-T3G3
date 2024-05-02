@@ -1,5 +1,10 @@
+import os
+from typing import Hashable, Optional
+
+import numpy as np
 import torch
-from monai.transforms import MapTransform
+from monai.config import KeysCollection
+from monai.transforms import MapTransform, SaveImaged
 
 
 class UndoOneHotEncoding(MapTransform):
@@ -46,6 +51,21 @@ class AddBackgroundChannel(MapTransform):
 
             # Add the new channel to the segmentation
             data[key] = torch.cat([seg, background.unsqueeze(0)], dim=0)
+
+        return data
+
+
+class ConvertToSingleChannel(MapTransform):
+    def __init__(self, keys):
+        super().__init__(keys)
+
+    def __call__(self, data):
+        for key in self.keys:
+            # Stack along the channel dimension
+            data[key] = np.argmax(data[key], axis=0).astype(np.int32)
+
+            # Unsqueeze the channel dimension
+            data[key] = torch.tensor(data[key]).unsqueeze(0)
 
         return data
 
