@@ -6,7 +6,7 @@ from monai.networks.nets import UNet
 
 from config import config
 from preprocessing import get_dataloaders, get_datasets, get_transforms
-from train import train, validate
+from src.train_validate import train, validate
 
 sys.path.append("..")
 
