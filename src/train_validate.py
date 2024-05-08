@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import torch
 import torch.nn as nn
-from monai.networks.nets import UNet
+from torch.cuda.amp import GradScaler, autocast
 from torchmetrics.functional.classification import (
     accuracy,
     dice,
@@ -11,83 +11,125 @@ from torchmetrics.functional.classification import (
 )
 from tqdm import tqdm
 
-from src.preprocessing import get_dataloaders, get_datasets, get_transforms
-
 sys.path.append("..")
 
-from src.config import config
+
+from config import config
 
 
-# Define the training loop
-def train(train_dataloader, model, criterion, optimizer, device):
+def train(train_dataloader, model, criterion, optimizer, device, grad_accum_steps=1):
+    """
+    Train the model for one epoch
+
+    Args:
+        train_dataloader: The training dataloader
+        model: The model to train
+        criterion: The loss function
+        optimizer: The optimizer
+        device: The device to use for training
+        grad_accum_steps: The number of gradient accumulation steps
+
+    Returns:
+        train_loss: The average training loss
+        train_acc: The average training accuracy
+        train_dice: The average training dice score
+        train_iou: The average training IoU score
+    """
     model.train()
     train_loss = 0.0
     train_acc = 0.0
     train_dice = 0.0
     train_iou = 0.0
 
-    for inputs, targets in tqdm(train_dataloader):
-        targets = targets.long().squeeze(dim=1)
-        inputs, targets = inputs.to(device), targets.to(device)
+    scaler = GradScaler()
 
-        print(inputs.shape)
+    for i, inputs in enumerate(tqdm(train_dataloader)):
+        volumes, targets = inputs["image"], inputs["seg"]
+        targets = targets.squeeze(dim=1).long()
+        volumes, targets = volumes.to(device), targets.to(device)
 
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
 
-        train_loss += loss.detach()
+        with autocast():
+            outputs = model(volumes)
+            loss = criterion(outputs, targets)
+
+        scaler.scale(loss).backward()
+
+        if (i + 1) % grad_accum_steps == 0 or i + 1 == len(train_dataloader):
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad()
+
+        train_loss += loss.item()
         outputs_max = torch.argmax(outputs, dim=1)
 
-        train_acc += accuracy(
-            outputs_max, targets, task="multiclass", num_classes=20, ignore_index=19
-        ).detach()
-        train_dice += dice(outputs, targets, ignore_index=19).detach()
-        train_iou += multiclass_jaccard_index(
-            outputs, targets, num_classes=20, ignore_index=19
-        ).detach()
+        with torch.no_grad():
+            train_acc += accuracy(
+                outputs_max, targets, task="multiclass", num_classes=5, ignore_index=4
+            ).item()
+            train_dice += dice(outputs, targets, ignore_index=4).item()
+            train_iou += multiclass_jaccard_index(
+                outputs, targets, num_classes=5, ignore_index=4
+            ).item()
 
     num_batches = len(train_dataloader)
     return (
-        (train_loss / num_batches).item(),
-        (train_acc / num_batches).item(),
-        (train_dice / num_batches).item(),
-        (train_iou / num_batches).item(),
+        train_loss / num_batches,
+        train_acc / num_batches,
+        train_dice / num_batches,
+        train_iou / num_batches,
     )
 
 
-# Define the validation loop
 def validate(val_loader, model, criterion, device):
+    """
+    Validate the model
+
+    Args:
+        val_loader: The validation dataloader
+        model: The model to validate
+        criterion: The loss function
+        device: The device to use for validation
+
+    Returns:
+        val_loss: The average validation loss
+        val_acc: The average validation accuracy
+        val_dice: The average validation dice score
+        val_iou: The average validation IoU score
+    """
     model.eval()
     val_loss = 0.0
     val_acc = 0.0
     val_dice = 0.0
     val_iou = 0.0
 
-    for inputs, targets in tqdm(val_loader):
-        targets = targets.long().squeeze(dim=1)
-        inputs, targets = inputs.to(device), targets.to(device)
+    with torch.no_grad():
+        for inputs in tqdm(val_loader):
+            volumes, targets = inputs["image"], inputs["seg"]
+            targets = targets.squeeze(dim=1).long()
+            volumes, targets = volumes.to(device), targets.to(device)
 
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
+            # Use autocast to enable mixed precision
+            with autocast():
+                outputs = model(volumes)
+                loss = criterion(outputs, targets)
 
-        val_loss += loss.detach()
-        outputs_max = torch.argmax(outputs, dim=1)
+            val_loss += loss.item()
+            outputs_max = torch.argmax(outputs, dim=1)
 
-        val_acc += accuracy(
-            outputs_max, targets, task="multiclass", num_classes=20, ignore_index=19
-        ).detach()
-        val_dice += dice(outputs, targets, ignore_index=19).detach()
-        val_iou += multiclass_jaccard_index(
-            outputs, targets, num_classes=20, ignore_index=19
-        ).detach()
+            val_acc += accuracy(
+                outputs_max, targets, task="multiclass", num_classes=5, ignore_index=4
+            ).item()
+            val_dice += dice(outputs, targets, ignore_index=4).item()
+            val_iou += multiclass_jaccard_index(
+                outputs, targets, num_classes=5, ignore_index=4
+            ).item()
 
     num_batches = len(val_loader)
     return (
-        (val_loss / num_batches).item(),
-        (val_acc / num_batches).item(),
-        (val_dice / num_batches).item(),
-        (val_iou / num_batches).item(),
+        val_loss / num_batches,
+        val_acc / num_batches,
+        val_dice / num_batches,
+        val_iou / num_batches,
     )

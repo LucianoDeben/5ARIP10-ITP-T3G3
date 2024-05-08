@@ -1,10 +1,7 @@
-import copy
 import math
 from fractions import Fraction
-from functools import partial
 
 import torch
-from einops import rearrange
 from torch import nn
 
 
@@ -120,8 +117,8 @@ class SegFormer3D(nn.Module):
         c3 = x[2]
         c4 = x[3]
         # decoding the embedded features
-        # x = self.segformer_decoder(c1, c2, c3, c4)
-        return c1, c2, c3, c4
+        x = self.segformer_decoder(c1, c2, c3, c4)
+        return x
 
 
 # ----------------------------------------------------- encoder -----------------------------------------------------
@@ -410,18 +407,14 @@ class MixVisionTransformer(nn.Module):
         # (batch_size, num_patches, hidden_state) -> (batch_size, hidden_state, D, H, W)
 
         # stage 1
-        print(f"Input: {x.shape}")  # (1, 1, 512, 512, 96)
         x = self.embed_1(x)
-        print(f"Embed 1: {x.shape}")  # (1, 393216, 32)
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for _, blk in enumerate(self.tf_block1):
             x = blk(x)
         x = self.norm1(x)
-        print(f"TF block output shape: {x.shape}")  # (1, 393216, 32)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
         x = x.reshape(B, h, w, d, -1).permute(0, 4, 1, 2, 3).contiguous()
-        print(f"Stage 1 output: {x.shape}")  # (1, 32, 16, 16, 6
         out.append(x)
 
         # stage 2
@@ -433,7 +426,6 @@ class MixVisionTransformer(nn.Module):
         x = self.norm2(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
         x = x.reshape(B, h, w, d, -1).permute(0, 4, 1, 2, 3).contiguous()
-        print(f"Stage 2 output: {x.shape}")
         out.append(x)
 
         # stage 3
@@ -445,20 +437,17 @@ class MixVisionTransformer(nn.Module):
         x = self.norm3(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
         x = x.reshape(B, h, w, d, -1).permute(0, 4, 1, 2, 3).contiguous()
-        print(f"Stage 3 output: {x.shape}")
         out.append(x)
 
         # stage 4
         x = self.embed_4(x)
-        print(f"stage 4 input: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for i, blk in enumerate(self.tf_block4):
             x = blk(x)
         x = self.norm4(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
-        x = x.reshape(B, h, w, d, -1).permute(0, 4, 1, 2, 3).contiguous()
-        print(f"Stage 4 output: {x.shape}")
+        x = x.reshape(B, h - 1, w - 1, d, -1).permute(0, 4, 1, 2, 3).contiguous()
         out.append(x)
 
         return out
@@ -496,7 +485,10 @@ class DWConv(nn.Module):
         # (batch, patch_cube, hidden_size) -> (batch, hidden_size, D, H, W)
         # assuming D = H = W, i.e. cube root of the patch is an integer number!
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
-        x = x.transpose(1, 2).view(B, C, h, w, d)
+        if h == 9:
+            x = x.transpose(1, 2).view(B, C, h - 1, w - 1, d)
+        else:
+            x = x.transpose(1, 2).view(B, C, h, w, d)
         x = self.dwconv(x)
         # added batchnorm (remove it ?)
         x = self.bn(x)
@@ -661,6 +653,9 @@ if __name__ == "__main__":
         size=(1, 1, 256, 256, 48),
         dtype=torch.float,
     )
+
+    seg = torch.stack([torch.randint(0, 2, (1, 256, 256, 48)) for _ in range(5)])
+    seg = seg.permute(1, 0, 2, 3, 4)  # Now seg has size (1, 5, 256, 256, 48)
     # input = torch.randint(
     #     low=0,
     #     high=255,
@@ -668,8 +663,25 @@ if __name__ == "__main__":
     #     dtype=torch.float,
     # )
     input = input.to("cuda:0")
+    seg = seg.float().to("cuda:0")
     segformer3D = SegFormer3D().to("cuda:0")
-    output = segformer3D(input)
-    print(len(output))
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.AdamW(segformer3D.parameters())
+
+    for _ in range(10):
+        # Zero the gradients
+        optimizer.zero_grad()
+
+        output = segformer3D(input)
+        criterion = nn.CrossEntropyLoss()
+        loss = criterion(output, seg)
+
+        # Backward pass
+        loss.backward()
+
+        # Update the weights
+        optimizer.step()
+
+        print(loss)
 
 ###################################################################################

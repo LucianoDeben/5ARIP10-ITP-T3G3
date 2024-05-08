@@ -11,7 +11,7 @@ from monai.transforms import (
     ScaleIntensityRanged,
 )
 
-from src.custom_transforms import (
+from custom_transforms import (
     AddBackgroundChannel,
     AddVesselContrast,
     ConvertToSingleChannel,

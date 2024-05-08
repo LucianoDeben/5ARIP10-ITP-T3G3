@@ -67,4 +67,5 @@ venv.bak/
 
 #WandB
 /notebooks/wandb
+/src/wandb
 
