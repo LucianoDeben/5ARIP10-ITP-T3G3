@@ -1,3 +1,5 @@
+import sys
+
 from monai.apps import TciaDataset
 from monai.data import DataLoader
 from monai.transforms import (
@@ -21,7 +23,7 @@ from custom_transforms import (
 )
 
 
-def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
+def get_transforms(resize_shape=[256, 256, 48], contrast_value=100):
     """
     Create a composed transform for the data preprocessing of mask and image data
 
@@ -52,7 +54,7 @@ def get_transforms(resize_shape=[512, 512, 96], contrast_value=100):
             # RemoveDualImage(keys=["image", "seg"]),
             # Resized(keys=["image", "seg"], spatial_size=resize_shape),
             # IsolateArteries(keys=["seg"]),
-            ConvertToSingleChannel(keys=["seg"]),
+            # ConvertToSingleChannel(keys=["seg"]),
             # DataStatsd(keys=["image", "seg"], data_shape=True),
             # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
         ],

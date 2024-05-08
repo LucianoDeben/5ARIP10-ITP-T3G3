@@ -17,7 +17,15 @@ sys.path.append("..")
 from config import config
 
 
-def train(train_dataloader, model, criterion, optimizer, device, grad_accum_steps=1):
+def train(
+    train_loader,
+    model,
+    criterion,
+    optimizer,
+    device,
+    num_classes=5,
+    grad_accum_steps=1,
+):
     """
     Train the model for one epoch
 
@@ -43,7 +51,7 @@ def train(train_dataloader, model, criterion, optimizer, device, grad_accum_step
 
     scaler = GradScaler()
 
-    for i, inputs in enumerate(tqdm(train_dataloader)):
+    for i, inputs in enumerate(tqdm(train_loader)):
         volumes, targets = inputs["image"], inputs["seg"]
         targets = targets.squeeze(dim=1).long()
         volumes, targets = volumes.to(device), targets.to(device)
@@ -56,7 +64,7 @@ def train(train_dataloader, model, criterion, optimizer, device, grad_accum_step
 
         scaler.scale(loss).backward()
 
-        if (i + 1) % grad_accum_steps == 0 or i + 1 == len(train_dataloader):
+        if (i + 1) % grad_accum_steps == 0 or i + 1 == len(train_loader):
             scaler.step(optimizer)
             scaler.update()
             optimizer.zero_grad()
@@ -64,16 +72,32 @@ def train(train_dataloader, model, criterion, optimizer, device, grad_accum_step
         train_loss += loss.item()
         outputs_max = torch.argmax(outputs, dim=1)
 
+        # Check if targets are one-hot encoded
+        if targets.shape[1] == 5:
+            targets_max = torch.argmax(targets, dim=1)
+        else:
+            targets_max = targets
+
         with torch.no_grad():
             train_acc += accuracy(
-                outputs_max, targets, task="multiclass", num_classes=5, ignore_index=4
+                outputs_max,
+                targets_max,
+                task="multiclass",
+                num_classes=num_classes,
+                ignore_index=0,
             ).item()
-            train_dice += dice(outputs, targets, ignore_index=4).item()
+            train_dice += dice(
+                outputs_max,
+                targets_max,
+                ignore_index=0,
+                num_classes=num_classes,
+                average="micro",
+            ).item()
             train_iou += multiclass_jaccard_index(
-                outputs, targets, num_classes=5, ignore_index=4
+                outputs_max, targets_max, num_classes=num_classes, ignore_index=0
             ).item()
 
-    num_batches = len(train_dataloader)
+    num_batches = len(train_loader)
     return (
         train_loss / num_batches,
         train_acc / num_batches,
@@ -82,7 +106,7 @@ def train(train_dataloader, model, criterion, optimizer, device, grad_accum_step
     )
 
 
-def validate(val_loader, model, criterion, device):
+def validate(val_loader, model, criterion, device, num_classes=5):
     """
     Validate the model
 
@@ -118,12 +142,28 @@ def validate(val_loader, model, criterion, device):
             val_loss += loss.item()
             outputs_max = torch.argmax(outputs, dim=1)
 
+            # Check if targets are one-hot encoded
+            if targets.shape[1] == 5:
+                targets_max = torch.argmax(targets, dim=1)
+            else:
+                targets_max = targets
+
             val_acc += accuracy(
-                outputs_max, targets, task="multiclass", num_classes=5, ignore_index=4
+                outputs_max,
+                targets_max,
+                task="multiclass",
+                num_classes=num_classes,
+                ignore_index=0,
             ).item()
-            val_dice += dice(outputs, targets, ignore_index=4).item()
+            val_dice += dice(
+                outputs_max,
+                targets_max,
+                ignore_index=0,
+                num_classes=num_classes,
+                average="micro",
+            ).item()
             val_iou += multiclass_jaccard_index(
-                outputs, targets, num_classes=5, ignore_index=4
+                outputs_max, targets_max, num_classes=num_classes, ignore_index=0
             ).item()
 
     num_batches = len(val_loader)

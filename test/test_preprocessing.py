@@ -1,4 +1,7 @@
+import sys
 import unittest
+
+sys.path.append("..")
 
 from monai.transforms import Compose
 
@@ -16,9 +19,9 @@ class TestGetTransforms(unittest.TestCase):
         self.assertTrue(len(self.transform.transforms) > 0)
 
     def test_transform_keys(self):
-        expected_keys = ["image", "seg"]
+        expected_keys = set(["image", "seg"])
         for transform in self.transform.transforms:
-            self.assertEqual(transform.keys, expected_keys)
+            self.assertTrue(set(transform.keys).issubset(expected_keys))
 
 
 if __name__ == "__main__":

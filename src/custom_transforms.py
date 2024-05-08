@@ -50,7 +50,7 @@ class AddBackgroundChannel(MapTransform):
             background = (seg.sum(dim=0) == 0).float()
 
             # Add the new channel to the segmentation
-            data[key] = torch.cat([seg, background.unsqueeze(0)], dim=0)
+            data[key] = torch.cat([background.unsqueeze(0), seg], dim=0)
 
         return data
 

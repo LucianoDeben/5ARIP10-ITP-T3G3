@@ -408,6 +408,7 @@ class MixVisionTransformer(nn.Module):
 
         # stage 1
         x = self.embed_1(x)
+        print(f"Embed 1: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for _, blk in enumerate(self.tf_block1):
@@ -419,6 +420,7 @@ class MixVisionTransformer(nn.Module):
 
         # stage 2
         x = self.embed_2(x)
+        print(f"Embed 2: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for _, blk in enumerate(self.tf_block2):
@@ -430,6 +432,7 @@ class MixVisionTransformer(nn.Module):
 
         # stage 3
         x = self.embed_3(x)
+        print(f"Embed 3: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for i, blk in enumerate(self.tf_block3):
@@ -441,13 +444,14 @@ class MixVisionTransformer(nn.Module):
 
         # stage 4
         x = self.embed_4(x)
+        print(f"Embed 4: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for i, blk in enumerate(self.tf_block4):
             x = blk(x)
         x = self.norm4(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
-        x = x.reshape(B, h - 1, w - 1, d, -1).permute(0, 4, 1, 2, 3).contiguous()
+        x = x.reshape(B, h, w, d, -1).permute(0, 4, 1, 2, 3).contiguous()
         out.append(x)
 
         return out
@@ -485,10 +489,7 @@ class DWConv(nn.Module):
         # (batch, patch_cube, hidden_size) -> (batch, hidden_size, D, H, W)
         # assuming D = H = W, i.e. cube root of the patch is an integer number!
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
-        if h == 9:
-            x = x.transpose(1, 2).view(B, C, h - 1, w - 1, d)
-        else:
-            x = x.transpose(1, 2).view(B, C, h, w, d)
+        x = x.transpose(1, 2).view(B, C, h, w, d)
         x = self.dwconv(x)
         # added batchnorm (remove it ?)
         x = self.bn(x)
@@ -504,7 +505,14 @@ def cube_root(n):
 def get_dimensions(n, ratio=Fraction(16, 3)):
     product = n * ratio
     root = round(math.pow(product, (1 / 3)))
-    return root, root, round(root / ratio)
+
+    reduced_root = round(root / ratio)
+
+    # Check if root is an uneven number
+    if root % 2 != 0:
+        root -= 1
+
+    return root, root, reduced_root
 
 
 ###################################################################################
