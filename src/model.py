@@ -408,7 +408,6 @@ class MixVisionTransformer(nn.Module):
 
         # stage 1
         x = self.embed_1(x)
-        print(f"Embed 1: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for _, blk in enumerate(self.tf_block1):
@@ -420,7 +419,6 @@ class MixVisionTransformer(nn.Module):
 
         # stage 2
         x = self.embed_2(x)
-        print(f"Embed 2: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for _, blk in enumerate(self.tf_block2):
@@ -432,7 +430,6 @@ class MixVisionTransformer(nn.Module):
 
         # stage 3
         x = self.embed_3(x)
-        print(f"Embed 3: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for i, blk in enumerate(self.tf_block3):
@@ -444,7 +441,6 @@ class MixVisionTransformer(nn.Module):
 
         # stage 4
         x = self.embed_4(x)
-        print(f"Embed 4: {x.shape}")
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
         for i, blk in enumerate(self.tf_block4):

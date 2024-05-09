@@ -7,7 +7,7 @@ wandb.init(
         "learning_rate": 3e-5,
         "batch_size": 1,
         "num_workers": 0,
-        "num_epochs": 1,
+        "num_epochs": 50,
         "num_classes": 5,
         "grad_accum_steps": 1,
         "val_frac": 0.2,
