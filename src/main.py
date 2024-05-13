@@ -42,7 +42,7 @@ def main():
         collection="HCC-TACE-Seg",
         transform=transform,
         download=True,
-        download_len=2,
+        download_len=5,
         seg_type="SEG",
         val_frac=config["val_frac"],
         seed=config["seed"],
@@ -60,7 +60,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Initialize the model
-    model = SegFormer3D().to(device)
+    model = SegFormer3D(num_classes=config["num_classes"]).to(device)
 
     # Use DataParallel if multiple GPUs are available
     if torch.cuda.device_count() > 1:
@@ -68,10 +68,16 @@ def main():
         model = nn.parallel.DistributedDataParallel(model)
 
     # Initialize the criterion
-    criterion = DiceCELoss(include_background=False, sigmoid=True, to_onehot_y=False)
+    criterion = DiceCELoss(
+        sigmoid=True, to_onehot_y=False, weight=torch.tensor([0.75]).to(device)
+    )
 
     # Initialize the optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["learning_rate"])
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config["learning_rate"],
+        weight_decay=config["weight_decay"],
+    )
 
     wandb.watch(model, log_freq=100)
 
@@ -100,7 +106,18 @@ def main():
             num_classes=config["num_classes"],
         )
 
-        print(train_dice, val_dice)
+        # Print the results
+        print(
+            f"Epoch {epoch + 1}/{config['num_epochs']}: "
+            f"Train Loss: {train_loss:.4f}, "
+            f"Train Acc: {train_acc:.4f}, "
+            f"Train Dice: {train_dice:.4f}, "
+            f"Train IoU: {train_iou:.4f}, "
+            f"Val Loss: {val_loss:.4f}, "
+            f"Val Acc: {val_acc:.4f}, "
+            f"Val Dice: {val_dice:.4f}, "
+            f"Val IoU: {val_iou:.4f}"
+        )
 
         # Log the results with the wandb logger
         wandb.log(

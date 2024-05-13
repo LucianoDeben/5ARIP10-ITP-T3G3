@@ -32,6 +32,34 @@ def create_drr(
     mask_to_channels=True,
     device="cpu",
 ):
+    """
+    Create a digitally reconstructed radiograph (DRR) from a CT volume and segmentation
+
+    Args:
+        volume (torch.Tensor): The CT volume
+        segmentation (torch.Tensor): The segmentation
+        bone_attenuation_multiplier (float): The bone attenuation multiplier
+        sdd (int): The source-to-detector distance
+        height (int): The height of the DRR
+        width (int): The width of the DRR
+        delx (float): The pixel spacing in the X-direction
+        dely (float): The pixel spacing in the Y-direction
+        x0 (int): The principal point X-offset
+        y0 (int): The principal point Y-offset
+        p_subsample (float): The proportion of pixels to randomly subsample
+        reshape (bool): Whether to reshape the DRR to (b, 1, h, w)
+        reverse_x_axis (bool): Whether to reverse the X-axis
+        patch_size (int): The size of the patches to render
+        renderer (str): The rendering backend
+        rotations (torch.Tensor): The rotations to apply
+        rotations_degrees (bool): Whether the rotations are in degrees
+        translations (torch.Tensor): The translations to apply
+        mask_to_channels (bool): Whether to convert the mask to channels
+        device (str): The device to use
+
+    Returns:
+        img (torch.Tensor): The DRR
+    """
 
     # Read the image and segmentation subject
     subject = read(

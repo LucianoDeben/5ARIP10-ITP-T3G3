@@ -2,7 +2,13 @@ import math
 from fractions import Fraction
 
 import torch
+from monai.losses import DiceCELoss
 from torch import nn
+from torchmetrics.functional.classification import (
+    binary_accuracy,
+    binary_jaccard_index,
+    dice,
+)
 
 
 def build_segformer3d_model(config=None):
@@ -208,8 +214,7 @@ class SelfAttention(nn.Module):
 
         if self.sr_ratio > 1:
             h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
-            # x.shape = (1, 393216, 32)
-            # (batch_size, sequence_length, embed_dim) -> (batch_size, embed_dim, patch_D, patch_H, patch_W)
+            # (batch_size, sequence_length, embed_dim) -> (batch_size, embed_dim, patch_W, patch_H, patch_D)
             x_ = x.permute(0, 2, 1).reshape(B, C, h, w, d)
             # (batch_size, embed_dim, patch_D, patch_H, patch_W) -> (batch_size, embed_dim, patch_D/sr_ratio, patch_H/sr_ratio, patch_W/sr_ratio)
             x_ = self.sr(x_).reshape(B, C, -1).permute(0, 2, 1)
@@ -432,7 +437,7 @@ class MixVisionTransformer(nn.Module):
         x = self.embed_3(x)
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
-        for i, blk in enumerate(self.tf_block3):
+        for _, blk in enumerate(self.tf_block3):
             x = blk(x)
         x = self.norm3(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
@@ -443,7 +448,7 @@ class MixVisionTransformer(nn.Module):
         x = self.embed_4(x)
         B, N, C = x.shape
         h, w, d = get_dimensions(N, ratio=Fraction(16, 3))
-        for i, blk in enumerate(self.tf_block4):
+        for _, blk in enumerate(self.tf_block4):
             x = blk(x)
         x = self.norm4(x)
         # (B, N, C) -> (B, D, H, W, C) -> (B, C, D, H, W)
@@ -657,8 +662,10 @@ if __name__ == "__main__":
         size=(1, 1, 256, 256, 48),
         dtype=torch.float,
     )
+    # Set the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    seg = torch.stack([torch.randint(0, 2, (1, 256, 256, 48)) for _ in range(5)])
+    seg = torch.stack([torch.randint(0, 2, (1, 256, 256, 48)) for _ in range(1)])
     seg = seg.permute(1, 0, 2, 3, 4)  # Now seg has size (1, 5, 256, 256, 48)
     # input = torch.randint(
     #     low=0,
@@ -668,16 +675,19 @@ if __name__ == "__main__":
     # )
     input = input.to("cuda:0")
     seg = seg.float().to("cuda:0")
-    segformer3D = SegFormer3D().to("cuda:0")
-    criterion = nn.CrossEntropyLoss()
+    segformer3D = SegFormer3D(num_classes=1).to("cuda:0")
+    # Initialize the criterion
+    criterion = DiceCELoss(
+        sigmoid=True, to_onehot_y=False, weight=torch.tensor([0.75]).to(device)
+    )
     optimizer = torch.optim.AdamW(segformer3D.parameters())
+    train_dice = 0.0
 
-    for _ in range(10):
+    for _ in range(50):
         # Zero the gradients
         optimizer.zero_grad()
 
         output = segformer3D(input)
-        criterion = nn.CrossEntropyLoss()
         loss = criterion(output, seg)
 
         # Backward pass
@@ -685,7 +695,13 @@ if __name__ == "__main__":
 
         # Update the weights
         optimizer.step()
+        outputs_max = (torch.sigmoid(output) > 0.5).float()
 
-        print(loss)
+        train_dice = dice(
+            outputs_max,
+            seg.int(),
+        ).item()
+        print(train_dice)
+
 
 ###################################################################################
