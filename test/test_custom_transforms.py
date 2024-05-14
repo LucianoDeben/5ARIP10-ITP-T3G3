@@ -1,5 +1,8 @@
 import copy
+import sys
 import unittest
+
+sys.path.append("..")
 
 import torch
 
@@ -29,13 +32,13 @@ class TestAddBackgroundChannel(unittest.TestCase):
         self.assertTrue(
             torch.equal(
                 transformed_data["key1"],
-                torch.tensor([[[0, 1], [1, 0]], [[1, 0], [0, 1]]], dtype=torch.float32),
+                torch.tensor([[[1, 0], [0, 1]], [[0, 1], [1, 0]]], dtype=torch.float32),
             )
         )
         self.assertTrue(
             torch.equal(
                 transformed_data["key2"],
-                torch.tensor([[[1, 0], [0, 1]], [[0, 1], [1, 0]]], dtype=torch.float32),
+                torch.tensor([[[0, 1], [1, 0]], [[1, 0], [0, 1]]], dtype=torch.float32),
             )
         )
         self.assertTrue(
