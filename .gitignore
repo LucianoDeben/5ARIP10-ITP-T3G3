@@ -70,3 +70,7 @@ venv.bak/
 /src/wandb
 /wandb
 
+# Medical files
+*.dcm
+*.nii
+*.nii.gz

@@ -3,6 +3,7 @@ import sys
 import torch
 import torch.nn as nn
 from monai.losses import DiceCELoss
+from monai.networks.nets import UNet
 from torch.optim.lr_scheduler import LambdaLR
 
 import wandb
@@ -60,7 +61,14 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Initialize the model
-    model = SegFormer3D(num_classes=config["num_classes"]).to(device)
+    # model = SegFormer3D(num_classes=config["num_classes"]).to(device)
+    model = UNet(
+        spatial_dims=3,
+        in_channels=1,
+        out_channels=1,
+        channels=(4, 8, 16, 32, 64),
+        strides=(2, 2, 2, 2),
+    ).to(device)
 
     # Use DataParallel if multiple GPUs are available
     if torch.cuda.device_count() > 1:
@@ -69,7 +77,7 @@ def main():
 
     # Initialize the criterion
     criterion = DiceCELoss(
-        sigmoid=True, to_onehot_y=False, weight=torch.tensor([0.75]).to(device)
+        sigmoid=True, to_onehot_y=False, weight=torch.tensor([0.9]).to(device)
     )
 
     # Initialize the optimizer
@@ -81,7 +89,7 @@ def main():
 
     wandb.watch(model, log_freq=100)
 
-    scheduler = LambdaLR(optimizer, lr_lambda)
+    # scheduler = LambdaLR(optimizer, lr_lambda)
 
     # Setup the model training loop
     for epoch in range(config["num_epochs"]):
@@ -93,7 +101,6 @@ def main():
             criterion=criterion,
             optimizer=optimizer,
             device=device,
-            num_classes=config["num_classes"],
             grad_accum_steps=config["grad_accum_steps"],
         )
 
@@ -103,7 +110,6 @@ def main():
             model=model,
             criterion=criterion,
             device=device,
-            num_classes=config["num_classes"],
         )
 
         # Print the results
@@ -135,7 +141,7 @@ def main():
         )
 
         # Step the learning rate scheduler
-        scheduler.step()
+        # scheduler.step()
 
     # Save model
     torch.save(model.state_dict(), "../models/model.pth")

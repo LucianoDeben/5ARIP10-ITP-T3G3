@@ -1,8 +1,6 @@
 import sys
 
-import numpy as np
 import torch
-import torch.nn as nn
 from torch.cuda.amp import GradScaler, autocast
 from torchmetrics.functional.classification import (
     binary_accuracy,
@@ -14,16 +12,12 @@ from tqdm import tqdm
 sys.path.append("..")
 
 
-from config import config
-
-
 def train(
     train_loader,
     model,
     criterion,
     optimizer,
     device,
-    num_classes=5,
     grad_accum_steps=1,
 ):
     """
@@ -53,9 +47,6 @@ def train(
 
     for i, inputs in enumerate(tqdm(train_loader)):
         volumes, targets = inputs["image"], inputs["seg"]
-
-        # Select the vessel channel of the segmentation
-        targets = targets[:, 2].unsqueeze(1).long()
         volumes, targets = volumes.to(device), targets.to(device)
 
         optimizer.zero_grad()
@@ -74,22 +65,16 @@ def train(
         train_loss += loss.item()
         outputs_max = (torch.sigmoid(outputs) > 0.5).float()
 
-        # Check if targets are one-hot encoded
-        if targets.shape[1] == 5:
-            targets_max = torch.argmax(targets, dim=1)
-        else:
-            targets_max = targets
-
         with torch.no_grad():
             train_acc += binary_accuracy(
                 outputs_max,
-                targets_max,
+                targets,
             ).item()
             train_dice += dice(
                 outputs_max,
-                targets_max,
+                targets,
             ).item()
-            train_iou += binary_jaccard_index(outputs_max, targets_max).item()
+            train_iou += binary_jaccard_index(outputs_max, targets).item()
 
     num_batches = len(train_loader)
     return (
@@ -100,7 +85,7 @@ def train(
     )
 
 
-def validate(val_loader, model, criterion, device, num_classes=5):
+def validate(val_loader, model, criterion, device):
     """
     Validate the model
 
@@ -125,9 +110,6 @@ def validate(val_loader, model, criterion, device, num_classes=5):
     with torch.no_grad():
         for inputs in tqdm(val_loader):
             volumes, targets = inputs["image"], inputs["seg"]
-
-            # Select the vessel channel of the segmentation
-            targets = targets[:, 2].unsqueeze(1).long()
             volumes, targets = volumes.to(device), targets.to(device)
 
             # Use autocast to enable mixed precision
@@ -138,21 +120,15 @@ def validate(val_loader, model, criterion, device, num_classes=5):
             val_loss += loss.item()
             outputs_max = (torch.sigmoid(outputs) > 0.5).float()
 
-            # Check if targets are one-hot encoded
-            if targets.shape[1] == 5:
-                targets_max = torch.argmax(targets, dim=1)
-            else:
-                targets_max = targets
-
             val_acc += binary_accuracy(
                 outputs_max,
-                targets_max,
+                targets,
             ).item()
             val_dice += dice(
                 outputs_max,
-                targets_max,
+                targets,
             ).item()
-            val_iou += binary_jaccard_index(outputs_max, targets_max).item()
+            val_iou += binary_jaccard_index(outputs_max, targets).item()
 
     num_batches = len(val_loader)
     return (

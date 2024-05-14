@@ -7,7 +7,12 @@ from monai.transforms import (
     DataStatsd,
     EnsureChannelFirstd,
     LoadImaged,
+    Rand3DElasticd,
+    RandFlipd,
+    RandGaussianNoised,
     RandGridDistortiond,
+    RandRotated,
+    RandScaleIntensityd,
     Resized,
     ResizeWithPadOrCropd,
     ScaleIntensityRanged,
@@ -16,6 +21,7 @@ from monai.transforms import (
 from src.custom_transforms import (
     AddBackgroundChannel,
     AddVesselContrast,
+    ClassIsolation,
     ConvertToSingleChannel,
     IsolateArteries,
     RemoveDualImage,
@@ -23,7 +29,7 @@ from src.custom_transforms import (
 )
 
 
-def get_transforms(resize_shape=[256, 256, 48], contrast_value=100):
+def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=True):
     """
     Create a composed transform for the data preprocessing of mask and image data
 
@@ -33,34 +39,68 @@ def get_transforms(resize_shape=[256, 256, 48], contrast_value=100):
     Returns:
         transform: The composed transform
     """
-    # Create a composed transform
-    transform = Compose(
-        [
-            LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
-            EnsureChannelFirstd(keys=["image", "seg"]),
-            ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=resize_shape),
-            RemoveNecrosisChannel(keys=["seg"]),
-            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
-            AddBackgroundChannel(keys=["seg"]),
-            # ScaleIntensityRanged(
-            #     keys=["image"],
-            #     a_min=-2048,
-            #     a_max=1455,
-            #     b_min=-170,
-            #     b_max=230,
-            #     clip=True,
-            # ),
-            AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
-            # RemoveDualImage(keys=["image", "seg"]),
-            # Resized(keys=["image", "seg"], spatial_size=resize_shape),
-            # IsolateArteries(keys=["seg"]),
-            # ConvertToSingleChannel(keys=["seg"]),
-            # DataStatsd(keys=["image", "seg"], data_shape=True),
-            # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
-        ],
-        lazy=False,
-    )
-    return transform
+
+    if is_train:
+
+        # Create a composed transform
+        train_transform = Compose(
+            [
+                LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
+                EnsureChannelFirstd(keys=["image", "seg"]),
+                ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=resize_shape),
+                RemoveNecrosisChannel(keys=["seg"]),
+                # Resized(keys=["image", "seg"], spatial_size=resize_shape),
+                AddBackgroundChannel(keys=["seg"]),
+                # ScaleIntensityRanged(
+                #     keys=["image"],
+                #     a_min=-170,
+                #     a_max=230,
+                #     b_min=-170,
+                #     b_max=230,
+                #     clip=True,
+                # ),
+                AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+                # RemoveDualImage(keys=["image", "seg"]),
+                # Resized(keys=["image", "seg"], spatial_size=resize_shape),
+                # IsolateArteries(keys=["seg"]),
+                # ConvertToSingleChannel(keys=["seg"]),
+                # DataStatsd(keys=["image", "seg"], data_shape=True),
+                # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
+                # RandFlipd(keys=["image", "seg"], prob=0.25, spatial_axis=1),
+                # RandRotated(
+                #     keys=["image", "seg"],
+                #     prob=0.50,
+                #     range_x=0.36,
+                #     range_y=0.0,
+                #     range_z=0.0,
+                # ),
+                # RandGaussianNoised(keys=["image"], prob=0.25),
+                # RandScaleIntensityd(keys=["image"], prob=0.25, factors=0.15),
+                # Rand3DElasticd(
+                #     keys=["image", "seg"],
+                #     prob=0.15,
+                #     sigma_range=(5, 8),
+                #     magnitude_range=(0.1, 0.2),
+                # ),
+                ClassIsolation(keys=["seg"], class_index=2),
+            ],
+            lazy=False,
+        )
+        return train_transform
+    else:
+        val_transform = Compose(
+            [
+                LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
+                EnsureChannelFirstd(keys=["image", "seg"]),
+                ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=resize_shape),
+                RemoveNecrosisChannel(keys=["seg"]),
+                AddBackgroundChannel(keys=["seg"]),
+                AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+                ClassIsolation(keys=["seg"], class_index=2),
+            ],
+            lazy=False,
+        )
+        return val_transform
 
 
 def get_datasets(

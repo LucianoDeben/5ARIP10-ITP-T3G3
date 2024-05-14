@@ -174,3 +174,16 @@ class IsolateArteries(MapTransform):
         data["seg"] = data["seg"][2, :, :, :]
         # print(data['seg'].size())
         return data
+
+
+class ClassIsolation(MapTransform):
+    def __init__(self, keys, class_index):
+        super().__init__(keys)
+        self.class_index = class_index
+
+    def __call__(self, data):
+        d = dict(data)
+        for key in self.keys:
+            print(d[key].shape)
+            d[key] = d[key][self.class_index, :, :, :].unsqueeze(0)
+        return d
