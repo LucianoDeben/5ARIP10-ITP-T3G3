@@ -11,5 +11,3 @@ wandb.init(
         "seed": 42,
     },
 )
-
-config = wandb.config
