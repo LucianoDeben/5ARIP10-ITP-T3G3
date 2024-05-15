@@ -19,3 +19,5 @@ wandb.init(
         "resize_shape": [256, 256, 48],
     },
 )
+
+config = wandb.config

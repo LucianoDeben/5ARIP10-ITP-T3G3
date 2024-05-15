@@ -23,7 +23,6 @@ from src.custom_transforms import (
     AddVesselContrast,
     ClassIsolation,
     ConvertToSingleChannel,
-    IsolateArteries,
     RemoveDualImage,
     RemoveNecrosisChannel,
 )
@@ -48,9 +47,9 @@ def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=Tr
                 LoadImaged(reader="PydicomReader", keys=["image", "seg"]),
                 EnsureChannelFirstd(keys=["image", "seg"]),
                 ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=resize_shape),
-                RemoveNecrosisChannel(keys=["seg"]),
+                # RemoveNecrosisChannel(keys=["seg"]),
                 # Resized(keys=["image", "seg"], spatial_size=resize_shape),
-                AddBackgroundChannel(keys=["seg"]),
+                # AddBackgroundChannel(keys=["seg"]),
                 # ScaleIntensityRanged(
                 #     keys=["image"],
                 #     a_min=-170,
@@ -59,10 +58,9 @@ def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=Tr
                 #     b_max=230,
                 #     clip=True,
                 # ),
-                AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+                # AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
                 # RemoveDualImage(keys=["image", "seg"]),
                 # Resized(keys=["image", "seg"], spatial_size=resize_shape),
-                # IsolateArteries(keys=["seg"]),
                 # ConvertToSingleChannel(keys=["seg"]),
                 # DataStatsd(keys=["image", "seg"], data_shape=True),
                 # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
@@ -95,7 +93,7 @@ def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=Tr
                 ResizeWithPadOrCropd(keys=["image", "seg"], spatial_size=resize_shape),
                 RemoveNecrosisChannel(keys=["seg"]),
                 AddBackgroundChannel(keys=["seg"]),
-                AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
+                # AddVesselContrast(keys=["image", "seg"], contrast_value=contrast_value),
                 ClassIsolation(keys=["seg"], class_index=2),
             ],
             lazy=False,
@@ -186,3 +184,42 @@ def get_dataloaders(train_dataset, val_dataset, batch_size=1, num_workers=0):
     )
 
     return train_loader, val_loader
+
+
+def add_vessel_contrast(image, seg, contrast_value):
+    """
+    Increase the contrast of vessels in an image using the vessel segmentation mask.
+
+    Parameters:
+    image (torch.Tensor): The input image.
+    seg (torch.Tensor): The segmentation mask.
+    contrast_value (float): The value to add to the vessel pixels in the image.
+
+    Returns:
+    torch.Tensor: The image with increased vessel contrast.
+    """
+    # Check the number of dimensions in the segmentation mask
+    if len(seg.shape) == 5:  # Batched input
+        # Check the number of channels in the segmentation mask
+        if seg.shape[1] == 1:
+            # If there's only one channel, the vessels are at index 0
+            vessel_mask = seg[:, 0]
+        else:
+            # Otherwise, the vessels are at index 3
+            vessel_mask = seg[:, 3]
+        # Add an extra dimension for the channels
+        vessel_mask = vessel_mask.unsqueeze(1)
+    else:  # Non-batched input
+        # Check the number of channels in the segmentation mask
+        if seg.shape[0] == 1:
+            # If there's only one channel, the vessels are at index 0
+            vessel_mask = seg[0]
+        else:
+            # Otherwise, the vessels are at index 3
+            vessel_mask = seg[3]
+        # Add an extra dimension for the channels
+        vessel_mask = vessel_mask.unsqueeze(0)
+
+    # Add the vessel contrast to the image
+    image[vessel_mask == 1] += contrast_value
+    return image

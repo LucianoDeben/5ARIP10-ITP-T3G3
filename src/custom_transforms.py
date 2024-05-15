@@ -1,30 +1,6 @@
-import os
-from typing import Hashable, Optional
-
 import numpy as np
 import torch
-from monai.config import KeysCollection
-from monai.transforms import MapTransform, SaveImaged
-
-
-class UndoOneHotEncoding(MapTransform):
-    """
-    Undo the one-hot encoding of the segmentation
-
-    Args:
-        keys (list): The keys to which the transform should be applied
-
-    Returns:
-        data (dict): The data dictionary with the segmentation as a single channel
-    """
-
-    def __init__(self, keys):
-        super().__init__(keys)
-
-    def __call__(self, data):
-        for key in self.keys:
-            data[key] = data[key].argmax(dim=0).unsqueeze(0)
-        return data
+from monai.transforms import MapTransform
 
 
 class AddBackgroundChannel(MapTransform):
@@ -56,6 +32,16 @@ class AddBackgroundChannel(MapTransform):
 
 
 class ConvertToSingleChannel(MapTransform):
+    """
+    Convert the segmentation to a single channel
+
+    Args:
+        keys (list): The keys to which the transform should be applied
+
+    Returns:
+        data (dict): The data dictionary with the segmentation converted to a single channel
+    """
+
     def __init__(self, keys):
         super().__init__(keys)
 
@@ -90,42 +76,6 @@ class RemoveNecrosisChannel(MapTransform):
             if data[key].shape[0] > 4:
                 # Remove the 3rd channel
                 data[key] = torch.cat((data[key][:2], data[key][3:]), axis=0)
-        return data
-
-
-class ConvertToHU(MapTransform):
-    """
-    Convert the pixel values to Hounsfield Units
-
-    Args:
-        keys (list): The keys to which the transform should be applied
-
-    Returns:
-        data (dict): The data dictionary with the pixel values converted to Hounsfield Units
-    """
-
-    def __init__(self, keys):
-        super().__init__(keys)
-
-    def __call__(self, data):
-        for key in self.keys:
-
-            if key == "seg":
-                raise ValueError("The key 'seg' is not a valid key for ConvertToHU")
-
-            # Get the pixel array
-            image = data[key]
-
-            # Get the RescaleSlope and RescaleIntercept from the metadata
-            rescale_slope = image.meta["RescaleSlope"]
-            rescale_intercept = image.meta["RescaleIntercept"]
-
-            # Convert to Hounsfield Units
-            hu_array = image * rescale_slope + rescale_intercept
-
-            # Replace the pixel array with the HU array
-            data[key] = torch.tensor(hu_array).unsqueeze(0)
-
         return data
 
 
@@ -165,17 +115,6 @@ class RemoveDualImage(MapTransform):
         return data
 
 
-class IsolateArteries(MapTransform):
-    def __init__(self, keys):
-        super().__init__(keys)
-
-    def __call__(self, data):
-
-        data["seg"] = data["seg"][2, :, :, :]
-        # print(data['seg'].size())
-        return data
-
-
 class ClassIsolation(MapTransform):
     def __init__(self, keys, class_index):
         super().__init__(keys)
@@ -184,6 +123,5 @@ class ClassIsolation(MapTransform):
     def __call__(self, data):
         d = dict(data)
         for key in self.keys:
-            print(d[key].shape)
             d[key] = d[key][self.class_index, :, :, :].unsqueeze(0)
         return d
