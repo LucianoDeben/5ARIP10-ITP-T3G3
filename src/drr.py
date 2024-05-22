@@ -91,6 +91,10 @@ def create_drr(
 
     # img = drr(pose.to(device), mask_to_channels=mask_to_channels)
     img = drr(
-        rotations.to(device), translations.to(device), mask_to_channels=mask_to_channels
+        rotations.to(device),
+        translations.to(device),
+        mask_to_channels=mask_to_channels,
+        parameterization="euler_angles",
+        convention="ZXY",
     )
     return img
