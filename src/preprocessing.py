@@ -63,8 +63,8 @@ def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=Tr
                 # Resized(keys=["image", "seg"], spatial_size=resize_shape),
                 # ConvertToSingleChannel(keys=["seg"]),
                 # DataStatsd(keys=["image", "seg"], data_shape=True),
-                # RandGridDistortiond(keys=["image", "seg"], prob=0.5),
-                # RandFlipd(keys=["image", "seg"], prob=0.25, spatial_axis=1),
+                # RandGridDistortiond(keys=["image", "seg"], prob=0.0),
+                RandFlipd(keys=["image", "seg"], prob=0.5, spatial_axis=1),
                 # RandRotated(
                 #     keys=["image", "seg"],
                 #     prob=0.50,
