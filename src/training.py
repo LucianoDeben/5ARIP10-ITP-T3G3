@@ -34,12 +34,12 @@ def buildModel():
     model.to(device)
 
     # Initialize the criterion, DICE loss with cross entropy uses binary cross entropy when there are only two classes
-    criterion = torch.nn.L1Loss()
+    criterion = torch.nn.MSELoss()
 
     # Initialize the optimizer, use config to set hyperparameters
-    optimizer = torch.optim.AdamW(
+    optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=2e-3,
+        lr=1e-3,
     )
 
     return model, criterion, optimizer, device
@@ -55,6 +55,7 @@ def sampleVolume(train_loader):
     return volume, target
 
 def trainSingleEpoch(model, criterion, optimizer, Volume, Target, device, length, verbose=False):
+    
     model.train()
     for i in range(length):
         rotation = random.uniform(-40,40)
@@ -71,16 +72,12 @@ def trainSingleEpoch(model, criterion, optimizer, Volume, Target, device, length
             mask_to_channels=True,
             device="cpu",
             )
-        drr_body = drr_raw[:,0,:,:]
-        drr_vessels = drr_raw[:,1,:,:]
-
-        drr_body = (drr_body/(torch.max(drr_body.flatten()))).to(device)
-        drr_vessels = ((drr_vessels/(torch.max(drr_vessels.flatten())))*2).to(device)
+        
 
         enhancement_factor = random.uniform(0.4,0.6)
-        drr_combined = (drr_body + enhancement_factor*drr_vessels).unsqueeze(0)
+        drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor, device)
 
-        prediction, _ = model(Target.to(device), drr_combined.to(device))
+        prediction, _ = model(Target.to(device), drr_input)
         loss = criterion(prediction, drr_vessels)
         loss.backward()
         optimizer.step()
@@ -125,15 +122,36 @@ def testModel(model, criterion, Volume, Target, device):
     print("-----------------------------------")
 
 
-def trainModel(epochs,length, verbose=False):
+def trainModel(epochs,length, save, load, path, verbose=False):
     train_loader, _ = loadData()
     model, criterion, optimizer, device = buildModel()
     volume, target = sampleVolume(train_loader)
 
+    if load:
+        model.load_state_dict(torch.load(path))
+
     for i in range(epochs):
         trainSingleEpoch(model,criterion,optimizer,volume,target,device,length,verbose)
-        testModel(model,criterion,volume,target,device)
+        #testModel(model,criterion,volume,target,device)
         visualizeModel(model,volume,target,device)
+    
+    if save:
+        torch.save(model.state_dict(), path)
+
+
+def fetchResults(path):
+    train_loader, _ = loadData()
+    model, criterion, optimizer, device = buildModel()
+    volume, target = sampleVolume(train_loader)
+
+    model.load_state_dict(torch.load(path))
+
+    visualizationResult(model, volume, target, device)
+    loss = rotationSweep(model, volume, target, device, criterion)
+
+    return loss
+
+
 
 def visualizeModel(model, Volume, Target, device):
     rotation = random.uniform(-40,40)
@@ -149,33 +167,26 @@ def visualizeModel(model, Volume, Target, device):
             mask_to_channels=True,
             device="cpu",
             )
-    drr_body = drr_raw[:,0,:,:]
-    drr_vessels = drr_raw[:,1,:,:]
-
-    drr_body = (drr_body/(torch.max(drr_body.flatten()))).to(device)
-    drr_vessels = ((drr_vessels/(torch.max(drr_vessels.flatten())))*2).to(device)
-    enhancement_factor = 0.5
-    drr_combined = (drr_body + enhancement_factor*drr_vessels).unsqueeze(0)
     
-    prediction, latent_representation = model(Target.to(device), drr_combined)
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.5, device=device)
+    
+    prediction, latent_representation = model(Target.to(device), drr_input)
 
-    Ai_enhanced = drr_body+prediction
-    enhanced_target = drr_body+drr_vessels
     
     # Create a figure and a set of subplots
     fig, axs = plt.subplots(1, 4, figsize=(12, 4))
 
     # Plot each image in a subplot
-    axs[0].imshow(drr_combined.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 3)
+    axs[0].imshow(drr_input.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
     axs[0].set_title('DRR')
 
-    axs[2].imshow(enhanced_target.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 3)
-    axs[2].set_title('enhanced target')
+    axs[1].imshow(drr_vessels.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[1].set_title('enhanced target')
 
-    axs[1].imshow(Ai_enhanced.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 3)
-    axs[1].set_title('AI Enhanced')
+    axs[2].imshow(prediction.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[2].set_title('AI Enhanced')
 
-    axs[3].imshow(latent_representation.cpu().detach().numpy().squeeze())
+    axs[3].imshow(latent_representation.cpu().detach().numpy().squeeze(), cmap = 'gray')
     axs[3].set_title('Latent Representation')
 
     # Hide the axes labels
@@ -183,3 +194,105 @@ def visualizeModel(model, Volume, Target, device):
         ax.axis('off')
     plt.show()
 
+def drr_to_input(drr_raw, enhancement_factor, device):
+    drr_body = drr_raw[:,0,:,:]
+    drr_vessels = drr_raw[:,1,:,:]
+
+    #drr_body = (drr_body/(torch.max(drr_body.flatten()))).to(device)
+    #drr_vessels = ((drr_vessels/(torch.max(drr_vessels.flatten())))*2).to(device)
+    drr_input = (drr_body + enhancement_factor*drr_vessels).unsqueeze(0)
+    
+    drr_vessels = drr_vessels.unsqueeze(0)
+    #print(f"input size: {drr_input.size()}")
+    #print(f"target size: {drr_vessels.size()}")
+
+    return drr_input.to(device), drr_vessels.to(device)
+
+def visualizationResult(model, Volume, Target, device):
+    model.eval()
+
+    rotation = random.uniform(-40,40)
+    drr_raw = create_drr(
+            Volume[0],
+            Target[0],
+            bone_attenuation_multiplier=5.0,
+            sdd=1020,
+            height=256,
+            width=256,
+            rotations=torch.tensor([[rotation, 0.0, 0.0]]),
+            translations=torch.tensor([[0.0, 850.0, 0.0]]),
+            mask_to_channels=True,
+            device="cpu",
+            )
+    drr_body = drr_raw[:,0,:,:].to(device)
+    fig, axs = plt.subplots(2, 4, figsize=(16, 8))
+    axs = axs.flatten()
+
+
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.6, device=device)
+    prediction, latent_representation = model(Target.to(device), drr_input)
+    AI_enhanced = drr_body+prediction
+
+    axs[0].imshow(drr_input.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[4].imshow(AI_enhanced.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.5, device=device)
+    prediction, latent_representation = model(Target.to(device), drr_input)
+    AI_enhanced = drr_body+prediction
+
+    axs[1].imshow(drr_input.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[5].imshow(AI_enhanced.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.4, device=device)
+    prediction, latent_representation = model(Target.to(device), drr_input)
+    AI_enhanced = drr_body+prediction
+
+    axs[2].imshow(drr_input.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[6].imshow(AI_enhanced.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.1, device=device)
+    prediction, latent_representation = model(Target.to(device), drr_input)
+    AI_enhanced = drr_body+prediction
+
+    axs[3].imshow(drr_input.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+    axs[7].imshow(AI_enhanced.cpu().detach().numpy().squeeze(), cmap='gray', vmax = 40)
+
+    for i in range(8):
+        axs[i].axis('off')
+
+
+    plt.show()
+
+
+def rotationSweep(model, Volume, Target, device, criterion):
+    total_loss = []
+    #EF sweep
+    for j in range(10):
+        
+        ef = j/10
+        loss = []
+        #Rotation sweep
+        for i in range(80):
+            drr_raw = create_drr(
+                Volume[0],
+                Target[0],
+                bone_attenuation_multiplier=5.0,
+                sdd=1020,
+                height=256,
+                width=256,
+                rotations=torch.tensor([[i-40, 0.0, 0.0]]),
+                translations=torch.tensor([[0.0, 850.0, 0.0]]),
+                mask_to_channels=True,
+                device="cpu",
+                )
+            
+            drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=ef, device=device)
+            prediction, latent_representation = model(Target.to(device), drr_input)
+            loss.append(criterion(prediction, drr_vessels).item())
+            print(f"loop: {j}, angle: {i}")
+        
+        print(f"loss of loop {j}: {np.mean(loss)}")
+        total_loss.append(np.mean(loss))
+
+    
+    return total_loss
