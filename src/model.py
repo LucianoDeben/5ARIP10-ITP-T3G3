@@ -100,10 +100,10 @@ class TACEnet(nn.Module):
         self.net = ConvNet()
     
     def forward(self, VesselVolume, DRR):
-        x = self.lrm(VesselVolume)
-        x = torch.concatenate((DRR, x), dim=1)
+        latent_representation = self.lrm(VesselVolume)
+        x = torch.concatenate((DRR, latent_representation), dim=1)
         x = self.net(x)
-        return x
+        return x, latent_representation
 
 
 def build_segformer3d_model(config=None):
