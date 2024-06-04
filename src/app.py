@@ -1,38 +1,18 @@
-import random
-
 # Import libraries
 import sys
 
-import numpy as np
 import streamlit as st
 import torch
-import torchio as tio
-from PIL import Image
-from torchvision.transforms import ToTensor
 
-from drr import create_drr
 from model import TACEnet
 
 sys.path.append("..")
-
-import matplotlib.pyplot as plt
-import pyvista
 import torch
-from monai.losses import DiceCELoss
-from torchvision import transforms
-from tqdm import tqdm
 
-from diffdrr.data import load_example_ct, read, transform_hu_to_density
+from diffdrr.data import load_example_ct
 from diffdrr.drr import DRR
-from diffdrr.pose import convert
-from diffdrr.visualization import drr_to_mesh, img_to_mesh, plot_drr, plot_mask
-from preprocessing import (
-    add_vessel_contrast,
-    get_dataloaders,
-    get_datasets,
-    get_transforms,
-)
-from vizualization import plot_drr_enhancement, plot_results
+from diffdrr.visualization import plot_drr
+from preprocessing import get_eval_transforms
 
 # Load example CT data
 subject = load_example_ct(bone_attenuation_multiplier=1.0)
@@ -40,10 +20,10 @@ subject = load_example_ct(bone_attenuation_multiplier=1.0)
 # Initialize the DRR module for generating synthetic X-rays
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 drr = DRR(
-    subject,  # A torchio.Subject object storing the CT volume, origin, and voxel spacing
-    sdd=1020,  # Source-to-detector distance (i.e., the C-arm's focal length)
-    height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)
-    delx=2.0,  # Pixel spacing (in mm)
+    subject,
+    sdd=1020,
+    height=200,
+    delx=2.0,
 ).to(device)
 
 # Specify the C-arm pose with a rotation (yaw, pitch, roll) and orientation (x, y, z)
@@ -57,7 +37,9 @@ st.pyplot(fig)
 
 # Load your model
 model = TACEnet()
-model.load_state_dict(torch.load("models/TACEnet_vessel_enhancement_1_0.pth"))
+model.load_state_dict(
+    torch.load("models/TACEnet_vessel_enhancement_deformations_30052024.pth")
+)
 model.eval()
 
 # Set the demo title
@@ -75,4 +57,8 @@ rotation = st.slider(
     label_visibility="visible",
 )
 
-prediction = model(subject)
+# Transform the subject to match model input size
+eval_transform = get_eval_transforms(resize_shape=[512, 512, 96])
+input = eval_transform(subject.volume.data)
+
+prediction = model(input.unsqueeze(0), drr)
