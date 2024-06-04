@@ -5,6 +5,7 @@ import random
 from src.drr import create_drr
 import numpy as np
 import matplotlib.pyplot as plt
+from timeit import default_timer as timer
 
 
 def loadData():
@@ -150,6 +151,38 @@ def fetchResults(path):
     loss = rotationSweep(model, volume, target, device, criterion)
 
     return loss
+
+def testInferenceSpeed(path):
+    train_loader, _ = loadData()
+    model, criterion, optimizer, device = buildModel()
+    volume, target = sampleVolume(train_loader)
+
+    model.load_state_dict(torch.load(path))
+
+    drr_raw = create_drr(
+            volume[0],
+            target[0],
+            bone_attenuation_multiplier=5.0,
+            sdd=1020,
+            height=256,
+            width=256,
+            rotations=torch.tensor([[0.0, 0.0, 0.0]]),
+            translations=torch.tensor([[0.0, 850.0, 0.0]]),
+            mask_to_channels=True,
+            device="cpu",
+            )
+    
+    drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.6, device=device)
+
+    start = timer()
+
+    print(target.size())
+    print(drr_input.size())
+    
+    prediction, latent_representation = model(target.to(device), drr_input)
+    end = timer()
+
+    return (end-start)
 
 
 
