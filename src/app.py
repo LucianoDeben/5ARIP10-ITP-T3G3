@@ -1,24 +1,20 @@
-# Import libraries
 import os
 import sys
+
+# Add submodule to sys.path
+sys.path.append(os.path.join(os.path.dirname(__file__), "DiffDRR/diffdrr"))
 
 import streamlit as st
 import torch
 
-from model import TACEnet
-
-sys.path.append("..")
-import torch
-
+# Now you can import from the submodule
 from diffdrr.drr import DRR
 from diffdrr.visualization import plot_drr
 from drr import create_drr
+from model import TACEnet
 from training import loadData, sampleVolume
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Add submodule to sys.path
-sys.path.append(os.path.join(os.path.dirname(__file__), "../DiffDRR/diffdrr"))
 
 # Set the page configuration
 st.set_page_config(page_title="DRR Enhancement Model Demo", layout="wide")
