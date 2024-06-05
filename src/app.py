@@ -1,11 +1,12 @@
 import os
 import sys
 
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
 import streamlit as st
 import torch
 
 # Now you can import from the submodule
-from diffdrr.drr import DRR
 from diffdrr.visualization import plot_drr
 from drr import create_drr
 from model import TACEnet
