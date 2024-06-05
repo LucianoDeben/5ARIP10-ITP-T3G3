@@ -1,9 +1,6 @@
 import os
 import sys
 
-# Add submodule to sys.path
-sys.path.append(os.path.join(os.path.dirname(__file__), "DiffDRR/diffdrr"))
-
 import streamlit as st
 import torch
 
