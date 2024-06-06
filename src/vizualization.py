@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 def plot_drr_enhancement(
     drr_body, drr_vessels, enhancement_factors, cmap="gray", vmax=20
 ):
+    # Move tensors to CPU
+    drr_body = drr_body.cpu()
+    drr_vessels = drr_vessels.cpu()
+
     fig, axs = plt.subplots(1, len(enhancement_factors), figsize=(12, 4))
 
     for i, ef in enumerate(enhancement_factors):

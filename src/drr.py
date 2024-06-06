@@ -89,7 +89,6 @@ def create_drr(
     # )
     # pose = pose1.compose(pose2)
 
-    # img = drr(pose.to(device), mask_to_channels=mask_to_channels)
     img = drr(
         rotations.to(device),
         translations.to(device),
