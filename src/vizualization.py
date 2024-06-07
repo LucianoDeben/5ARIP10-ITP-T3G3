@@ -19,7 +19,7 @@ def plot_drr_enhancement(
 
 
 def plot_results(
-    drr_combined_low_enhancement, drr_combined_target, prediction, vmax=25
+    drr_combined_low_enhancement, drr_combined_target, prediction, latent_representation, vmax=25
 ):
 
     # Move tensors to CPU
@@ -28,7 +28,7 @@ def plot_results(
     prediction = prediction.cpu()
 
     # Create a figure and a set of subplots
-    _, axs = plt.subplots(1, 3, figsize=(12, 4))
+    _, axs = plt.subplots(1, 4, figsize=(12, 4))
 
     # Plot each image in a subplot
     axs[0].imshow(
@@ -41,6 +41,9 @@ def plot_results(
 
     axs[1].imshow(prediction.detach().numpy().squeeze(), cmap="gray", vmax=vmax)
     axs[1].set_title("AI Enhanced")
+    
+    axs[3].imshow(latent_representation.detach().cpu().numpy().squeeze(), cmap="gray")
+    axs[3].set_title("Latent Representation")
 
     # Hide the axes labels
     for ax in axs:
