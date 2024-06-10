@@ -61,7 +61,6 @@ venv.bak/
 
 # Data
 /data
-/data081
 /SAM-Med3D
 
 
@@ -72,6 +71,5 @@ venv.bak/
 /wandb
 
 # Medical files
-*.dcm
 *.nii
 *.nii.gz
