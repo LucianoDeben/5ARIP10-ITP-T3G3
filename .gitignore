@@ -63,8 +63,8 @@ venv.bak/
 /data
 /data081
 /SAM-Med3D
-/models
-*.pth
+
+
 
 #WandB
 /notebooks/wandb
