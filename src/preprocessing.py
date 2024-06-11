@@ -117,7 +117,7 @@ def get_datasets(
 
     # Create the corresponding validation dataset
     val_dataset = TciaDataset(
-        root_dir="../data",
+        root_dir="../data081",
         collection=collection,
         section="validation",
         transform=transform,

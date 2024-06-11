@@ -6,6 +6,7 @@ from src.drr import create_drr
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer as timer
+from diffdrr.data import read
 
 
 def loadData():
@@ -59,12 +60,18 @@ def trainSingleEpoch(model, criterion, optimizer, Volume, Target, device, length
     
     model.train()
     for i in range(length):
-        rotation = random.uniform(-40,40)
+        rotation = random.uniform(-5,5)
         # Create raw DRR
-        drr_raw = create_drr(
-            Volume[0],
-            Target[0],
+        subject = read(
+            tensor=Volume[0],
+            label_tensor=Target[0],
+            orientation="AP",
             bone_attenuation_multiplier=5.0,
+        )
+        
+        
+        drr_raw = create_drr(
+            subject,
             sdd=1020,
             height=256,
             width=256,
@@ -72,7 +79,7 @@ def trainSingleEpoch(model, criterion, optimizer, Volume, Target, device, length
             translations=torch.tensor([[0.0, 850.0, 0.0]]),
             mask_to_channels=True,
             device="cpu",
-            )
+        )
         
 
         enhancement_factor = random.uniform(0.4,0.6)
@@ -92,11 +99,17 @@ def testModel(model, criterion, Volume, Target, device):
     loss = []
     
     for i in range(5):
-        rotation = (i*20-40)
-        drr_raw = create_drr(
-            Volume[0],
-            Target[0],
+        rotation = random.uniform(-5,5)
+        subject = read(
+            tensor=Volume[0],
+            label_tensor=Target[0],
+            orientation="AP",
             bone_attenuation_multiplier=5.0,
+        )
+        
+        
+        drr_raw = create_drr(
+            subject,
             sdd=1020,
             height=256,
             width=256,
@@ -104,7 +117,7 @@ def testModel(model, criterion, Volume, Target, device):
             translations=torch.tensor([[0.0, 850.0, 0.0]]),
             mask_to_channels=True,
             device="cpu",
-            )
+        )
         drr_body = drr_raw[:,0,:,:]
         drr_vessels = drr_raw[:,1,:,:]
 
@@ -159,18 +172,24 @@ def testInferenceSpeed(path):
 
     model.load_state_dict(torch.load(path))
 
-    drr_raw = create_drr(
-            volume[0],
-            target[0],
+    subject = read(
+            tensor=volume[0],
+            label_tensor=target[0],
+            orientation="AP",
             bone_attenuation_multiplier=5.0,
+        )
+        
+        
+    drr_raw = create_drr(
+            subject,
             sdd=1020,
             height=256,
             width=256,
-            rotations=torch.tensor([[0.0, 0.0, 0.0]]),
+            rotations=torch.tensor([[0, 0.0, 0.0]]),
             translations=torch.tensor([[0.0, 850.0, 0.0]]),
             mask_to_channels=True,
             device="cpu",
-            )
+        )
     
     drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.6, device=device)
 
@@ -187,11 +206,17 @@ def testInferenceSpeed(path):
 
 
 def visualizeModel(model, Volume, Target, device):
-    rotation = random.uniform(-40,40)
-    drr_raw = create_drr(
-            Volume[0],
-            Target[0],
+    rotation = random.uniform(-5,5)
+    subject = read(
+            tensor=Volume[0],
+            label_tensor=Target[0],
+            orientation="AP",
             bone_attenuation_multiplier=5.0,
+        )
+        
+        
+    drr_raw = create_drr(
+            subject,
             sdd=1020,
             height=256,
             width=256,
@@ -199,7 +224,7 @@ def visualizeModel(model, Volume, Target, device):
             translations=torch.tensor([[0.0, 850.0, 0.0]]),
             mask_to_channels=True,
             device="cpu",
-            )
+        )
     
     drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=0.5, device=device)
     
@@ -244,11 +269,17 @@ def drr_to_input(drr_raw, enhancement_factor, device):
 def visualizationResult(model, Volume, Target, device):
     model.eval()
 
-    rotation = random.uniform(-40,40)
-    drr_raw = create_drr(
-            Volume[0],
-            Target[0],
+    rotation = random.uniform(-5,5)
+    subject = read(
+            tensor=Volume[0],
+            label_tensor=Target[0],
+            orientation="AP",
             bone_attenuation_multiplier=5.0,
+        )
+        
+        
+    drr_raw = create_drr(
+            subject,
             sdd=1020,
             height=256,
             width=256,
@@ -256,7 +287,7 @@ def visualizationResult(model, Volume, Target, device):
             translations=torch.tensor([[0.0, 850.0, 0.0]]),
             mask_to_channels=True,
             device="cpu",
-            )
+        )
     drr_body = drr_raw[:,0,:,:].to(device)
     fig, axs = plt.subplots(2, 4, figsize=(16, 8))
     axs = axs.flatten()
@@ -306,25 +337,31 @@ def rotationSweep(model, Volume, Target, device, criterion):
         loss = []
         #Rotation sweep
         for i in range(80):
+            subject = read(
+            tensor=Volume[0],
+            label_tensor=Target[0],
+            orientation="AP",
+            bone_attenuation_multiplier=5.0,
+            )
+        
+        
             drr_raw = create_drr(
-                Volume[0],
-                Target[0],
-                bone_attenuation_multiplier=5.0,
-                sdd=1020,
-                height=256,
-                width=256,
-                rotations=torch.tensor([[i-40, 0.0, 0.0]]),
-                translations=torch.tensor([[0.0, 850.0, 0.0]]),
-                mask_to_channels=True,
-                device="cpu",
-                )
+            subject,
+            sdd=1020,
+            height=256,
+            width=256,
+            rotations=torch.tensor([[i-40, 0.0, 0.0]]),
+            translations=torch.tensor([[0.0, 850.0, 0.0]]),
+            mask_to_channels=True,
+            device="cpu",
+            )
             
             drr_input, drr_vessels = drr_to_input(drr_raw, enhancement_factor=ef, device=device)
             prediction, latent_representation = model(Target.to(device), drr_input)
             loss.append(criterion(prediction, drr_vessels).item())
-            print(f"loop: {j}, angle: {i}")
+            #print(f"loop: {j}, angle: {i}")
         
-        print(f"loss of loop {j}: {np.mean(loss)}")
+        #print(f"loss of loop {j}: {np.mean(loss)}")
         total_loss.append(np.mean(loss))
 
     
