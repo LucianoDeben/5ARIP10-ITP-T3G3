@@ -11,9 +11,7 @@ from diffdrr.pose import convert
 
 
 def create_drr(
-    volume,
-    segmentation,
-    bone_attenuation_multiplier=5.0,
+    subject,
     sdd=1020,
     height=200,
     width=200,
@@ -61,14 +59,6 @@ def create_drr(
         img (torch.Tensor): The DRR
     """
 
-    # Read the image and segmentation subject
-    subject = read(
-        tensor=volume,
-        label_tensor=segmentation,
-        orientation="AP",
-        bone_attenuation_multiplier=bone_attenuation_multiplier,
-    )
-
     # Create a DRR object
     drr = DRR(
         subject,  # A torchio.Subject object storing the CT volume, origin, and voxel spacing
@@ -90,12 +80,20 @@ def create_drr(
     if rotations_degrees:
         rotations = torch.deg2rad(rotations)
 
-    zero = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    pose1 = convert(
-        zero, translations, parameterization="euler_angles", convention="ZXY"
-    )
-    pose2 = convert(rotations, zero, parameterization="euler_angles", convention="ZXY")
-    pose = pose1.compose(pose2)
+    # zero = torch.tensor([[0.0, 0.0, 0.0]], device=device)
+    # pose1 = convert(
+    #     zero, translations.to(device), parameterization="euler_angles", convention="ZXY"
+    # )
+    # pose2 = convert(
+    #     rotations.to(device), zero, parameterization="euler_angles", convention="ZXY"
+    # )
+    # pose = pose1.compose(pose2)
 
-    img = drr(pose, mask_to_channels=mask_to_channels)
+    img = drr(
+        rotations.to(device),
+        translations.to(device),
+        mask_to_channels=mask_to_channels,
+        parameterization="euler_angles",
+        convention="ZXY",
+    )
     return img

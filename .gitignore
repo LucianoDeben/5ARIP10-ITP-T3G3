@@ -61,10 +61,7 @@ venv.bak/
 
 # Data
 /data
-/data081
-/SAM-Med3D
-/models
-*.pth
+/assets
 
 #WandB
 /notebooks/wandb
@@ -72,6 +69,5 @@ venv.bak/
 /wandb
 
 # Medical files
-*.dcm
 *.nii
 *.nii.gz
