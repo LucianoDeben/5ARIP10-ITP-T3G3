@@ -68,7 +68,3 @@ venv.bak/
 /notebooks/wandb
 /src/wandb
 /wandb
-
-# Medical files
-*.nii
-*.nii.gz
