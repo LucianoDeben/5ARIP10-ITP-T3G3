@@ -1,10 +1,8 @@
 # 5ARIP10 Interdisciplinary Team Project Track 3 Group 3
 
-![Build Status](https://github.com/LucianoDeben/5ARIP10-ITP-T3G3/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/LucianoDeben/5ARIP10-ITP-T3G3/actions/workflows/ci.yml/badge.svg)[![codecov](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3/branch/main/graph/badge.svg)](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3)![GitHub](https://img.shields.io/github/license/LucianoDeben/5ARIP10-ITP-T3G3)
 
-[![codecov](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3/branch/main/graph/badge.svg)](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3)
-
-![GitHub](https://img.shields.io/github/license/LucianoDeben/5ARIP10-ITP-T3G3)
+![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)![Jupyter Notebook](https://img.shields.io/badge/jupyter-%23FA0F00.svg?style=for-the-badge&logo=jupyter&logoColor=white)![Anaconda](https://img.shields.io/badge/Anaconda-%2344A833.svg?style=for-the-badge&logo=anaconda&logoColor=white)
 
 ## Introduction
 
