@@ -5,9 +5,7 @@ sys.path.append("..")
 
 import torch
 
-from diffdrr.data import read
 from diffdrr.drr import DRR
-from diffdrr.pose import convert
 
 
 def create_drr(
@@ -80,15 +78,7 @@ def create_drr(
     if rotations_degrees:
         rotations = torch.deg2rad(rotations)
 
-    # zero = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    # pose1 = convert(
-    #     zero, translations.to(device), parameterization="euler_angles", convention="ZXY"
-    # )
-    # pose2 = convert(
-    #     rotations.to(device), zero, parameterization="euler_angles", convention="ZXY"
-    # )
-    # pose = pose1.compose(pose2)
-
+    # Create the DRR image tensor object
     img = drr(
         rotations.to(device),
         translations.to(device),

@@ -1,33 +1,16 @@
-import sys
+import os
 
 from monai.apps import TciaDataset
 from monai.data import DataLoader
 from monai.transforms import (
     Compose,
-    DataStatsd,
-    EnsureChannelFirst,
     EnsureChannelFirstd,
     LoadImaged,
-    Rand3DElasticd,
-    RandFlipd,
-    RandGaussianNoised,
-    RandGridDistortiond,
-    RandRotated,
-    RandScaleIntensityd,
-    Resized,
     ResizeWithPadOrCrop,
     ResizeWithPadOrCropd,
-    ScaleIntensityRanged,
 )
 
-from src.custom_transforms import (
-    AddBackgroundChannel,
-    AddVesselContrast,
-    ClassIsolation,
-    ConvertToSingleChannel,
-    RemoveDualImage,
-    RemoveNecrosisChannel,
-)
+from src.custom_transforms import ClassIsolation
 
 
 def get_transforms(resize_shape=[256, 256, 48], contrast_value=1000, is_train=True):
@@ -99,6 +82,10 @@ def get_datasets(
         train_dataset: The training dataset
         val_dataset: The validation dataset
     """
+
+    # Ensure root_dir exists
+    if not os.path.isdir(root_dir):
+        os.makedirs(root_dir, exist_ok=True)
 
     # Create a dataset for the training with a validation split
     train_dataset = TciaDataset(

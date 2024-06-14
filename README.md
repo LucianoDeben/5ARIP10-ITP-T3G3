@@ -29,6 +29,13 @@ After setting up the project, you can run the Streamlit demo application in `src
 1. `cd src`
 2. `streamlit run app.py`
 
+### Testing
+
+To run the unit test of the libary use:
+
+1. `cd  test`
+2. `python -m unittest discover -k 'test.test_*.py'`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/LucianoDeben/5ARIP10-ITP-T3G3/blob/main/LICENSE) file for details.
