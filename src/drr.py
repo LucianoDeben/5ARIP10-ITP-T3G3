@@ -5,7 +5,7 @@ sys.path.append("..")
 
 import torch
 
-from diffdrr.drr import DRR
+from diffdrr.drr import DRR, convert
 
 
 def create_drr(
@@ -74,16 +74,26 @@ def create_drr(
         renderer=renderer,  # Rendering backend, either "siddon" or "trilinear"
     ).to(device)
 
-    # Ensure rotations are in radians
     if rotations_degrees:
         rotations = torch.deg2rad(rotations)
 
+    # Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
+    zero = torch.tensor([[0.0, 0.0, 0.0]], device=device)
+    translations.to(device)
+    rotations.to(device)
+
+    # Convert the rotations and translations to a pose matrix
+    pose1 = convert(
+        zero, translations, parameterization="euler_angles", convention="ZXY"
+    ).to(device)
+    pose2 = convert(
+        rotations, zero, parameterization="euler_angles", convention="ZXY"
+    ).to(device)
+    pose = pose1.compose(pose2)
+
     # Create the DRR image tensor object
     img = drr(
-        rotations.to(device),
-        translations.to(device),
+        pose,
         mask_to_channels=mask_to_channels,
-        parameterization="euler_angles",
-        convention="ZXY",
     )
     return img
