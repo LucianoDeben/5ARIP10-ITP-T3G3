@@ -1,5 +1,11 @@
 # 5ARIP10 Interdisciplinary Team Project Track 3 Group 3
 
+![Build Status](https://github.com/LucianoDeben/5ARIP10-ITP-T3G3/actions/workflows/ci.yml/badge.svg)
+
+[![codecov](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3/branch/main/graph/badge.svg)](https://codecov.io/gh/LucianoDeben/5ARIP10-ITP-T3G3)
+
+![GitHub](https://img.shields.io/github/license/LucianoDeben/5ARIP10-ITP-T3G3)
+
 ## Introduction
 
 This project, conducted in collaboration between Eindhoven University of Technology (TU/e) and Philips, is focused on developing an AI solution for the Image Guided Therapy Challenge on Transarterial Chemoembolization (TACE) procedures. The goal of this project is to enhance the efficiency and accuracy of TACE procedures using advanced AI techniques.
