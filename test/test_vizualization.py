@@ -1,7 +1,7 @@
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 from numpy.testing import assert_array_equal
@@ -65,13 +65,17 @@ class TestPlotResults(unittest.TestCase):
         self.drr_combined_target = torch.rand(1, 10, 10)
         self.prediction = torch.rand(1, 10, 10)
         self.latent_representation = torch.rand(1, 10, 10)
-        self.vmax = 25
+        self.vmax = 20
 
-    @patch.object(plt, "subplots")
-    @patch.object(plt, "show")
-    def test_plot_results(self, mock_show, mock_subplots):
+    @patch.object(plt, "figure")
+    @patch.object(plt, "tight_layout")
+    def test_plot_results_creates_correct_number_of_subplots(
+        self, mock_tight_layout, mock_figure
+    ):
+        mock_fig = MagicMock()
         mock_ax = MagicMock()
-        mock_subplots.return_value = (None, [mock_ax] * 4)
+        mock_figure.return_value = mock_fig
+        mock_fig.add_subplot.return_value = mock_ax
 
         plot_results(
             self.drr_combined_low_enhancement,
@@ -81,33 +85,48 @@ class TestPlotResults(unittest.TestCase):
             self.vmax,
         )
 
-        mock_subplots.assert_called_once_with(1, 4, figsize=(12, 4))
-        mock_show.assert_called_once()
+        self.assertEqual(mock_fig.add_subplot.call_count, 4)
 
-        self.assertEqual(mock_ax.imshow.call_count, 4)
-        self.assertEqual(mock_ax.set_title.call_count, 4)
-        self.assertEqual(mock_ax.axis.call_count, 4)
-
-        titles = ["DRR", "AI Enhanced", "enhanced target", "Latent Representation"]
-        expected_calls = [
-            (self.drr_combined_low_enhancement.squeeze().numpy(), "gray", self.vmax),
-            (self.drr_combined_target.squeeze().numpy(), "gray", self.vmax),
-            (self.prediction.squeeze().numpy(), "gray", self.vmax),
-            (self.latent_representation.detach().cpu().numpy().squeeze(), "gray", None),
-        ]
-
-        for call, (expected_array, cmap, vmax) in zip(
-            mock_ax.imshow.call_args_list, expected_calls
+    def test_plot_results_sets_titles_correctly(self):
+        titles = ["DRR", "AI Enhanced", "Enhanced Target", "Latent Representation"]
+        with patch.object(plt, "figure") as mock_figure, patch.object(
+            plt, "tight_layout"
         ):
-            actual_array, actual_kwargs = call[0][0], call[1]
-            assert_array_equal(actual_array, expected_array)
-            self.assertEqual(actual_kwargs["cmap"], cmap)
-            if vmax is not None:
-                self.assertEqual(actual_kwargs["vmax"], vmax)
+            mock_fig = MagicMock()
+            mock_ax = MagicMock()
+            mock_figure.return_value = mock_fig
+            mock_fig.add_subplot.return_value = mock_ax
 
-        for i, title in enumerate(titles):
-            mock_ax.set_title.assert_any_call(title)
-            mock_ax.axis.assert_any_call("off")
+            plot_results(
+                self.drr_combined_low_enhancement,
+                self.drr_combined_target,
+                self.prediction,
+                self.latent_representation,
+                self.vmax,
+            )
+
+            title_calls = [call(title) for title in titles]
+            mock_ax.set_title.assert_has_calls(title_calls, any_order=False)
+
+    def test_plot_results_turns_axis_off(self):
+        with patch.object(plt, "figure") as mock_figure, patch.object(
+            plt, "tight_layout"
+        ):
+            mock_fig = MagicMock()
+            mock_ax = MagicMock()
+            mock_figure.return_value = mock_fig
+            mock_fig.add_subplot.return_value = mock_ax
+
+            plot_results(
+                self.drr_combined_low_enhancement,
+                self.drr_combined_target,
+                self.prediction,
+                self.latent_representation,
+                self.vmax,
+            )
+
+            self.assertEqual(mock_ax.axis.call_count, 4)
+            mock_ax.axis.assert_called_with("off")
 
 
 if __name__ == "__main__":

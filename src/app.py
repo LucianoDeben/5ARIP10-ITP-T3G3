@@ -6,59 +6,44 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import streamlit as st
 import torch
 
-# Now you can import from the submodule
-from diffdrr.data import read
-from diffdrr.visualization import plot_drr
-from drr import create_drr
-from model import TACEnet
-from training import loadData, sampleVolume
+from demo import demonstration, get_demo_data, load_model
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Set the page configuration
-st.set_page_config(page_title="DRR Enhancement Model Demo", layout="wide")
+st.set_page_config(page_title="Tacetastic", layout="wide")
 
 
-# Caching the model loading to avoid reloading the model on each interaction
 @st.cache_resource(show_spinner="Loading the model...")
-def load_model():
-    model = TACEnet()
-    model.load_state_dict(
-        torch.load("../models/TACEnet_vessel_enhancement_deformations_30052024.pth")
+def cached_load_model(deformation, device):
+    return load_model(deformation, device)
+
+
+@st.cache_data(show_spinner="Collecting the data...")
+def cached_get_demo_data():
+    return get_demo_data()
+
+
+@st.cache_data(show_spinner="Generating the results...")
+def cached_demonstration(
+    _volumes, _targets, _model, rotation, ef, deformation, initial_contrast, device
+):
+    # Your existing code to generate the figure
+    fig = demonstration(
+        _volumes, _targets, _model, rotation, ef, deformation, initial_contrast, device
     )
-    model.eval()
-    return model
+    return fig
 
 
-# Caching the DRR generation to avoid redundant computations
-@st.cache_data(show_spinner="Generating DRR...")
-def cached_create_drr(_train_loader, contrast_value, height=256, width=256, rotation=0):
-    _volume, _target = sampleVolume(_train_loader, contrast_value=contrast_value)
-    subject = read(
-        tensor=_volume[0], label_tensor=_target[0], bone_attenuation_multiplier=5.0
-    )
-    return (
-        create_drr(
-            subject,
-            device="cpu",
-            height=height,
-            width=width,
-            mask_to_channels=False,
-            rotations=torch.tensor([[rotation, 0.0, 0.0]]),
-        ),
-        _volume,
-        _target,
-    )
+st.session_state.deformation_checkbox = False
 
+# Load the model
+model = cached_load_model(
+    deformation=st.session_state.deformation_checkbox, device=device
+)
 
-@st.cache_data
-def cached_loadData():
-    return loadData()
-
-
-@st.cache_data
-def cached_sampleVolume(_train_loader, contrast_value):
-    return sampleVolume(_train_loader, contrast_value=contrast_value)
+# Load the demo data
+volumes, targets = cached_get_demo_data()
 
 
 # Show dialog
@@ -83,8 +68,6 @@ def terms_conditions():
 if "terms_conditions" not in st.session_state:
     terms_conditions()
 
-st.logo("https://avatars.githubusercontent.com/u/8323854?s=200&v=4")
-
 # Display the DRR and enhanced DRR in the main layout
 st.title("DRR Enhancement Model Demo")
 
@@ -108,63 +91,38 @@ with st.sidebar:
     )
 
     st.slider(
-        label="Select initial contrast",
-        min_value=0,
-        max_value=4000,
-        value=0,
-        step=500,
+        label="Select contrast agent reduction ratio",
+        min_value=0.0,
+        max_value=1.0,
+        value=1.0,
+        step=0.1,
         key="contrast_slider",
-        help="Select the intital contrast",
+        help="Select the contrast reduction ratio for the vessels",
         on_change=None,
         label_visibility="visible",
     )
 
+    st.checkbox(
+        label="Enable deformation",
+        value=st.session_state.deformation_checkbox,
+        key="deformation_checkbox",
+        help="Enable deformation of the subject",
+    )
+
     "---"
 
-# Load your model
-model = load_model()
-model.to(device)
+if st.sidebar.button("Generate"):
+    # Assuming demonstration now returns a figure directly
+    fig = cached_demonstration(
+        _volumes=volumes,
+        _targets=targets,
+        _model=model,
+        rotation=st.session_state.rotation_slider,
+        ef=st.session_state.contrast_slider,
+        deformation=st.session_state.deformation_checkbox,
+        initial_contrast=4000,
+        device=device,
+    )
 
-# Load CT data
-train_loader, val_loader = cached_loadData()
-# volume, target = cached_sampleVolume(
-#     train_loader, contrast_value=st.session_state.contrast_slider
-# )
-
-# Initialize the DRR module for generating synthetic X-rays
-drr, volume, target = cached_create_drr(
-    train_loader,
-    contrast_value=st.session_state.contrast_slider,
-    rotation=st.session_state.rotation_slider,
-)
-
-
-col1, col2, col3 = st.columns(spec=[0.4, 0.2, 0.4])
-
-with col1:
-    st.header("Original DRR")
-    axs = plot_drr(drr, ticks=False)
-    fig = axs[0].figure
-    fig.set_size_inches(2, 2)  # Adjust the figure size
+    # Display the figure in Streamlit's main view
     st.pyplot(fig)
-
-with col3:
-    st.header("Enhanced DRR")
-    enhanced_placeholder = st.empty()  # Placeholder for enhanced image
-
-with col2:
-    # Add an "Enhance" button
-    if st.button("Enhance"):
-        with st.spinner("Enhancing DRR..."):
-            prediction, latent = model(
-                volume[0].unsqueeze(0).to(device), drr.to(device)
-            )
-            axs = plot_drr(prediction, ticks=False)
-            fig = axs[0].figure
-            fig.set_size_inches(2, 2)  # Adjust the figure size
-            enhanced_placeholder.pyplot(fig)
-
-col4, col5, col6 = st.columns(3)
-col4.metric("Temperature", "70 °F", "1.2 °F")
-col5.metric("Wind", "9 mph", "-8%")
-col6.metric("Humidity", "86%", "4%")

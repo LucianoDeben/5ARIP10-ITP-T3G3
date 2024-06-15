@@ -24,6 +24,7 @@ def load_model(deformation, device):
     )
     model = TACEnet().to(device)
     model.load_state_dict(torch.load(model_path))
+    model.eval()
     return model
 
 
@@ -52,10 +53,8 @@ def generate_drr(subject, rotation, ef, device):
     return drr_combined, drr_vessels.to(device)
 
 
-def demonstration(rotation, ef, deformation=False, initial_contrast=4000, device="cpu"):
-    transform = get_transforms(
-        resize_shape=[512, 512, 96], contrast_value=initial_contrast
-    )
+def get_demo_data():
+    transform = get_transforms(resize_shape=[512, 512, 96])
     train_ds, _ = get_datasets(
         root_dir="../data081",
         collection="HCC-TACE-Seg",
@@ -63,15 +62,28 @@ def demonstration(rotation, ef, deformation=False, initial_contrast=4000, device
         transform=transform,
         download=False,
         download_len=1,
-        val_frac=0.2,
+        val_frac=0.0,
         seed=42,
     )
     train_loader, _ = get_dataloaders(train_ds, _, batch_size=1)
     batch = next(iter(train_loader))
     volumes, targets = batch["image"], batch["seg"]
+    return volumes, targets
+
+
+def demonstration(
+    volumes,
+    targets,
+    model,
+    rotation,
+    ef,
+    deformation=False,
+    initial_contrast=4000,
+    device="cpu",
+):
+
     volumes = add_vessel_contrast(volumes, targets, contrast_value=initial_contrast)
 
-    model = load_model(deformation, device)
     subject = read(
         tensor=volumes[0],
         label_tensor=targets[0],
@@ -83,5 +95,8 @@ def demonstration(rotation, ef, deformation=False, initial_contrast=4000, device
         subject = apply_deformation(subject)
     drr_combined, drr_target = generate_drr(subject, rotation, ef, device)
 
-    prediction, latent = model(targets.to(device), drr_combined)
-    plot_results(drr_combined, drr_target, prediction, latent, vmax=25)
+    with torch.no_grad():  # Disable gradient computation
+        prediction, latent = model(targets.to(device), drr_combined)
+    return plot_results(
+        drr_combined.cpu(), drr_target.cpu(), prediction.cpu(), latent.cpu(), vmax=25
+    )

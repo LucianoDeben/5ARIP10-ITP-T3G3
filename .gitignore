@@ -63,6 +63,8 @@ venv.bak/
 /data
 /assets
 /test/data
+*.zip
+/raw
 
 #WandB
 /notebooks/wandb
