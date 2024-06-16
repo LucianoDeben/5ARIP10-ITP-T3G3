@@ -8,6 +8,8 @@
 
 This project, conducted in collaboration between Eindhoven University of Technology (TU/e) and Philips, is focused on developing an AI solution for the Image Guided Therapy Challenge on Transarterial Chemoembolization (TACE) procedures. The goal of this project is to enhance the efficiency and accuracy of TACE procedures using advanced AI techniques.
 
+This methodology utilizes supervised learning to train a model. The model maps unenhanced Digital Direct Radiography (DDR) images to vessel-enhanced DRR images. This mapping is achieved by leveraging a 3D vessel network's latent representation. This novel approach offers a way to reduce contrast agent usage while maintaining high visibility of the vessel network even in deforming volumes.
+
 ## Getting Started
 
 ### Prerequisites
@@ -15,6 +17,17 @@ This project, conducted in collaboration between Eindhoven University of Technol
 This project is developed using Python and pip for package management. Ensure you have the following installed on your system:
 
 - Python 3.7 or higher
+
+## Project Structure
+
+- `src/`: Contains the source code for the project, including the Streamlit app and AI models.
+- `test/`: Contains unit tests for the project.
+- `models/`: Directory for storing AI model files (Note: due to size, models might need to be downloaded separately. Instructions below).
+- `requirements.txt`: Lists all Python dependencies required for the project.
+
+## Data
+
+This project uses publicly available datasets provided by The Cancer Imaging Archive (TCIA). To access these datasets, please head to the corresponding webpage [TCIA TACE Dataset](https://www.cancerimagingarchive.net/collection/hcc-tace-seg/).
 
 ### Installation
 
@@ -37,7 +50,7 @@ After setting up the project, you can run the Streamlit demo application in `src
 
 To run the unit test of the libary use:
 
-1. `cd  test`
+1. `cd test`
 2. `python -m unittest discover -k 'test.test_*.py'`
 
 ## License
