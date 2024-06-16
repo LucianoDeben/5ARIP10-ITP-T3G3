@@ -20,9 +20,9 @@ This project is developed using Python and pip for package management. Ensure yo
 
 ## Project Structure
 
-- `src/`: Contains the source code for the project, including the Streamlit app and AI models.
+- `src/`: Contains the source code for the project, including the Streamlit app and AI model training.
 - `test/`: Contains unit tests for the project.
-- `models/`: Directory for storing AI model files (Note: due to size, models might need to be downloaded separately. Instructions below).
+- `models/`: Directory for storing AI model files.
 - `requirements.txt`: Lists all Python dependencies required for the project.
 
 ## Data
